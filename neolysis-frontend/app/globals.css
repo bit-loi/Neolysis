@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: #7EC8D9;
+  --color-primary-dark: #5BA8B9;
+  --color-accent: #B2D8E5;
+  --color-navy: #041f12; /* Updated to dark green 'hijau tua' based on user request */
+  --color-navy-light: #08331f;
+  --color-navy-mid: #062718;
+  --color-offwhite: #f5f5f0;
+  --color-warm-gray: #e8e6e0;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, serif;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Grain Texture Overlay */
+.grain-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Glow effects */
+.cyan-glow {
+  box-shadow: 0 0 60px rgba(178, 216, 229, 0.15), 0 0 120px rgba(178, 216, 229, 0.05);
+}
+
+.cyan-glow-text {
+  text-shadow: 0 0 40px rgba(178, 216, 229, 0.3);
+}
+
+/* XDC-style bordered button */
+.btn-bordered {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  border: 1px solid currentColor;
+  font-size: 1rem;
+  font-weight: 400;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: transparent;
+  text-decoration: none;
+}
+
+.btn-bordered:hover {
+  background: rgba(178, 216, 229, 0.08);
+  border-color: #B2D8E5;
+}
+
+.btn-bordered-dark {
+  color: #171717;
+  border-color: #171717;
+}
+
+.btn-bordered-dark:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.btn-bordered-light {
+  color: #e5e5e5;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-bordered-light:hover {
+  border-color: #B2D8E5;
+  color: #B2D8E5;
+  background: rgba(178, 216, 229, 0.05);
+}
+
+/* Section transitions */
+.section-dark {
+  background-color: var(--color-navy);
+  color: #e5e5e5;
+}
+
+.section-light {
+  background-color: #f5f5f0;
+  color: #171717;
+}
+
+.section-gray {
+  background-color: #e8e6e0;
+  color: #171717;
+}
+
+/* Custom scrollbar for news carousel */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Animation keyframes */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.25; }
+}
+
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}

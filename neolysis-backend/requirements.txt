@@ -1,0 +1,84 @@
+# ===============================
+# FastAPI Core
+# ===============================
+fastapi
+uvicorn[standard]
+pydantic-settings
+python-multipart
+sse-starlette
+
+# ===============================
+# Database
+# ===============================
+sqlalchemy>=2.0.0
+psycopg2-binary
+asyncpg
+alembic
+pg
+
+# ===============================
+# Cache / Queue
+# ===============================
+redis
+celery
+
+# ===============================
+# Cheminformatics
+# ===============================
+rdkit
+biopython
+numpy
+pandas
+
+# ===============================
+# HTTP / API Clients
+# ===============================
+httpx
+
+# ===============================
+# LLM / AI
+# ===============================
+google-genai
+tenacity
+
+# ===============================
+# Authentication & Security
+# ===============================
+passlib[bcrypt]
+PyJWT
+email-validator
+
+# ===============================
+# Rate Limiting
+# ===============================
+slowapi
+
+# ===============================
+# Environment / Logging
+# ===============================
+python-dotenv
+loguru
+
+# ===============================
+# RAG Framework
+# ===============================
+llama-index
+langchain
+
+# ===============================
+# GraphRAG
+# ===============================
+neo4j
+networkx
+llama-index-graph-stores-neo4j
+
+# ===============================
+# Vector Search
+# ===============================
+faiss-cpu
+sentence-transformers
+
+# ===============================
+# Optional ML utils
+# ===============================
+scikit-learn

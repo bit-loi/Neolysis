@@ -1,0 +1,60 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/neolysis
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=change-me-in-production-use-a-long-random-string
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "python -m alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: neolysis
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build: .
+    command: celery -A app.core.worker celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/neolysis
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=change-me-in-production-use-a-long-random-string
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    restart: on-failure
+
+volumes:
+  postgres_data:
+  redis_data:
