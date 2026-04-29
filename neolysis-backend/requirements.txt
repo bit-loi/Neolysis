@@ -1,84 +1,69 @@
-# ===============================
-# FastAPI Core
-# ===============================
+# =============================================
+# Neolysis Backend — Python Dependencies
+# =============================================
+
+# ── FastAPI Core ──────────────────────────────
 fastapi
 uvicorn[standard]
+pydantic
 pydantic-settings
 python-multipart
 sse-starlette
 
-# ===============================
-# Database
-# ===============================
+# ── Database (PostgreSQL via Supabase, native asyncpg — NOT Supabase SDK) ──
 sqlalchemy>=2.0.0
-psycopg2-binary
 asyncpg
+psycopg2-binary
 alembic
-pg
 
-# ===============================
-# Cache / Queue
-# ===============================
+# ── Caching ───────────────────────────────────
 redis
-celery
 
-# ===============================
-# Cheminformatics
-# ===============================
+# ── Cheminformatics ───────────────────────────
 rdkit
 biopython
 numpy
 pandas
 
-# ===============================
-# HTTP / API Clients
-# ===============================
-httpx
+# ── RAG / Vector Store ────────────────────────
+qdrant-client
+sentence-transformers
+torch
 
-# ===============================
-# LLM / AI
-# ===============================
+# ── ADMET Prediction ──────────────────────────
+# PyTDC: Therapeutics Data Commons (pretrained ADMET models)
+PyTDC
+# DeepPurpose: model loader for TDC pretrained models
+# deepchem  # Optional: heavyweight, comment out if not needed
+
+# ── LLM / AI ──────────────────────────────────
 google-genai
 tenacity
 
-# ===============================
-# Authentication & Security
-# ===============================
+# ── HTTP Clients ──────────────────────────────
+httpx
+requests
+
+# ── Authentication & Security ─────────────────
 passlib[bcrypt]
 PyJWT
 email-validator
 
-# ===============================
-# Rate Limiting
-# ===============================
+# ── Rate Limiting ─────────────────────────────
 slowapi
 
-# ===============================
-# Environment / Logging
-# ===============================
+# ── Background Workers ────────────────────────
+celery
+
+# ── Environment & Logging ─────────────────────
 python-dotenv
 loguru
 
-# ===============================
-# RAG Framework
-# ===============================
-llama-index
-langchain
+# ── Testing (TDD) ─────────────────────────────
+pytest
+pytest-asyncio
+pytest-mock
+httpx    # AsyncClient for FastAPI test client
 
-# ===============================
-# GraphRAG
-# ===============================
-neo4j
-networkx
-llama-index-graph-stores-neo4j
-
-# ===============================
-# Vector Search
-# ===============================
-faiss-cpu
-sentence-transformers
-
-# ===============================
-# Optional ML utils
-# ===============================
-scikit-learn
+# ── Dev Tools ─────────────────────────────────
+# uvicorn is already included above via uvicorn[standard]

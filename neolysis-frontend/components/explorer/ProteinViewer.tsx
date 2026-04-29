@@ -26,15 +26,48 @@ export function ProteinViewer({ pdbId, proteinName, alphafoldId }: ProteinViewer
   const [error, setError] = useState<string | null>(null);
   const [viewer, setViewer] = useState<any>(null);
   const [style, setStyle] = useState<'cartoon' | 'stick' | 'surface'>('cartoon');
+  const [showDemoCombo, setShowDemoCombo] = useState(false);
   const [hasRCSB, setHasRCSB] = useState(true);
   const [lib3DmolReady, setLib3DmolReady] = useState(false);
+  const [insightData, setInsightData] = useState<any>(null);
+  const [isLoadingInsight, setIsLoadingInsight] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
+  
   const scriptLoaded = useRef(false);
   const initStarted = useRef(false);
 
   useEffect(() => {
+    if (showDemoCombo && !insightData && !isLoadingInsight && !insightError) {
+      const fetchInsight = async () => {
+        setIsLoadingInsight(true);
+        setInsightError(null);
+        try {
+          const res = await fetch('http://localhost:8000/api/v1/insight/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              protein_name: proteinName,
+              query: "Provide a concise structural analysis of the 3D binding site and key interacting residues for targeted inhibition. Write in English."
+            })
+          });
+          if (!res.ok) {
+            throw new Error('Failed to fetch AI insight');
+          }
+          const data = await res.json();
+          setInsightData(data);
+        } catch (err: any) {
+          setInsightError(err.message || 'An error occurred while fetching insight.');
+        } finally {
+          setIsLoadingInsight(false);
+        }
+      };
+      fetchInsight();
+    }
+  }, [showDemoCombo, proteinName, insightData, isLoadingInsight, insightError]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Already loaded from a previous mount
     if (window.$3Dmol) {
       setLib3DmolReady(true);
       return;
@@ -113,12 +146,14 @@ export function ProteinViewer({ pdbId, proteinName, alphafoldId }: ProteinViewer
   const updateStyle = () => {
     if (!viewer) return;
 
-    // Always clear existing surfaces first
+    // Clear existing surfaces, shapes, and labels
     viewer.removeAllSurfaces();
+    viewer.removeAllShapes();
+    viewer.removeAllLabels();
 
+    // Base Style
     if (style === 'surface') {
-      // Show a faint cartoon underneath so the surface has context
-      viewer.setStyle({}, { cartoon: { color: 'spectrum', opacity: 0.4 } });
+      viewer.setStyle({}, { cartoon: { color: 'spectrum' } });
       viewer.addSurface(
         window.$3Dmol.SurfaceType.VDW,
         { opacity: 0.8, color: 'white' },
@@ -127,7 +162,150 @@ export function ProteinViewer({ pdbId, proteinName, alphafoldId }: ProteinViewer
     } else if (style === 'stick') {
       viewer.setStyle({}, { stick: { colorscheme: 'Jmol' } });
     } else {
-      viewer.setStyle({}, { cartoon: { color: 'spectrum', opacity: 0.85 } });
+      viewer.setStyle({}, { cartoon: { color: 'spectrum' } });
+    }
+
+    // AI DEMO COMBO (Highlighting binding site & interactions)
+    if (showDemoCombo) {
+      try {
+        const model = viewer.getModel(0);
+        const atoms = model.selectedAtoms({});
+        if (atoms && atoms.length > 0) {
+          const extent = window.$3Dmol.getExtent(atoms);
+          
+          // Calculate center of the protein
+          const cx = (extent[0][0] + extent[1][0]) / 2;
+          const cy = (extent[0][1] + extent[1][1]) / 2;
+          const cz = (extent[0][2] + extent[1][2]) / 2;
+
+          // Find the maximum distance from center
+          let maxDist = 0;
+          atoms.forEach((a: any) => {
+            const d = Math.sqrt(Math.pow(a.x - cx, 2) + Math.pow(a.y - cy, 2) + Math.pow(a.z - cz, 2));
+            if (d > maxDist) maxDist = d;
+          });
+          
+          // Target a deeply buried pocket (e.g. 35% from center to edge, representing a deep cleft)
+          const targetDist = maxDist * 0.35;
+          let bestAtom = atoms[0];
+          let bestDiff = 9999;
+          
+          // Catalytic residues common in active sites
+          const catalyticRes = ['HIS', 'SER', 'CYS', 'GLU', 'ASP'];
+          
+          // 1st pass: Find deeply buried catalytic CA
+          atoms.forEach((a: any) => {
+            const d = Math.sqrt(Math.pow(a.x - cx, 2) + Math.pow(a.y - cy, 2) + Math.pow(a.z - cz, 2));
+            const diff = Math.abs(d - targetDist);
+            if (diff < bestDiff && a.atom === 'CA' && catalyticRes.includes(a.resn)) {
+              bestDiff = diff;
+              bestAtom = a;
+            }
+          });
+          
+          // 2nd pass: Fallback if no catalytic residue found
+          if (bestDiff === 9999) {
+            atoms.forEach((a: any) => {
+              const d = Math.sqrt(Math.pow(a.x - cx, 2) + Math.pow(a.y - cy, 2) + Math.pow(a.z - cz, 2));
+              const diff = Math.abs(d - targetDist);
+              if (diff < bestDiff && a.atom === 'CA') {
+                bestDiff = diff;
+                bestAtom = a;
+              }
+            });
+          }
+          
+          const baseResi = bestAtom.resi;
+
+          // 1. Highlight specific residues (Interacting residues) using a robust 3D spatial search
+          const nearbyResi = new Set<number>();
+          atoms.forEach((a: any) => {
+            if (a.atom === 'CA') {
+              const dist = Math.sqrt(
+                Math.pow(a.x - bestAtom.x, 2) + 
+                Math.pow(a.y - bestAtom.y, 2) + 
+                Math.pow(a.z - bestAtom.z, 2)
+              );
+              // Find surrounding residues within an 8 Angstrom radius
+              if (dist > 0 && dist < 8.0) {
+                nearbyResi.add(a.resi);
+              }
+            }
+          });
+          
+          // Include the anchor and up to 6 spatial neighbors
+          const interactingResi = [bestAtom.resi, ...Array.from(nearbyResi).slice(0, 6)];
+          viewer.addStyle({resi: interactingResi}, { stick: { color: "yellow", radius: 0.15 } });
+
+          // Calculate the true geometric center of these specific residues to perfectly center the box
+          let sumX = 0, sumY = 0, sumZ = 0, count = 0;
+
+          // Identify key residues with labels and calculate true center
+          interactingResi.forEach(r => {
+            const resAtoms = atoms.filter((a: any) => a.resi === r && a.atom === 'CA');
+            if (resAtoms.length > 0) {
+              const target = resAtoms[0];
+              
+              sumX += target.x;
+              sumY += target.y;
+              sumZ += target.z;
+              count++;
+              
+              // Capitalize first letter of residue name (e.g. "His", "Asp")
+              const resName = target.resn ? target.resn.charAt(0) + target.resn.slice(1).toLowerCase() : 'Res';
+              viewer.addLabel(`${resName}${r}`, {
+                position: { x: target.x, y: target.y, z: target.z },
+                fontColor: "#fbbf24", // yellow-400
+                fontSize: 12,
+                showBackground: false
+              });
+            }
+          });
+          
+          const pocketCenter = count > 0 
+            ? { x: sumX / count, y: sumY / count, z: sumZ / count }
+            : { x: bestAtom.x, y: bestAtom.y, z: bestAtom.z };
+
+          // 2. Add AutoDock Vina Grid Box (Visualizing the docking search space)
+          viewer.addBox({
+            center: pocketCenter,
+            dimensions: { w: 26, h: 26, d: 26 }, // Increased size to 26A to cover all residues
+            color: "green",
+            alpha: 0.5,
+            wireframe: true
+          });
+
+          // 3. Add Marker Sphere for Binding Pocket Centroid (Smaller)
+          viewer.addSphere({
+            center: pocketCenter,
+            radius: 1.2,
+            color: "red",
+            alpha: 0.9
+          });
+
+          // 4. Add General AI Label slightly above the box
+          viewer.addLabel("Optimal Binding Pocket", {
+            position: { x: pocketCenter.x, y: pocketCenter.y + 14, z: pocketCenter.z },
+            backgroundColor: "white",
+            fontColor: "black",
+            backgroundOpacity: 0.9,
+            borderColor: "black",
+            borderThickness: 1.0
+          });
+
+          // Focus on the binding site safely
+          // Restrict zoom selection to the specific chain of our anchor atom 
+          // to prevent multi-chain residue collisions from exploding the bounding box.
+          const zoomSelection: any = { resi: interactingResi };
+          if (bestAtom.chain) {
+            zoomSelection.chain = bestAtom.chain;
+          }
+          viewer.zoomTo(zoomSelection);
+          viewer.zoom(0.8, 1000); // zoom out slightly so the 26A grid box fits beautifully
+        }
+      } catch (e) {
+        console.error("Error rendering demo combo:", e);
+      }
     }
 
     viewer.render();
@@ -135,7 +313,7 @@ export function ProteinViewer({ pdbId, proteinName, alphafoldId }: ProteinViewer
 
   useEffect(() => {
     if (viewer) updateStyle();
-  }, [style, viewer]);
+  }, [style, showDemoCombo, viewer]);
 
   const handleReset = () => {
     if (!viewer) return;
@@ -196,7 +374,7 @@ export function ProteinViewer({ pdbId, proteinName, alphafoldId }: ProteinViewer
       </div>
 
       <div className="p-4 border-t border-gray-300 bg-white">
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className={`flex items-center gap-3 ${isLoading || error ? 'opacity-50 pointer-events-none' : ''}`}>
             <span className="text-xs font-bold text-black uppercase tracking-wider">Style:</span>
             <div className="flex gap-2">
@@ -215,8 +393,64 @@ export function ProteinViewer({ pdbId, proteinName, alphafoldId }: ProteinViewer
               ))}
             </div>
           </div>
+          
+          {/* AI DEMO TOGGLE */}
+          <button
+            onClick={() => setShowDemoCombo(!showDemoCombo)}
+            disabled={isLoading || !!error}
+            className={`flex items-center gap-2 px-4 py-1.5 text-sm font-bold border transition-all ${
+              showDemoCombo 
+                ? 'bg-green-100 text-green-800 border-green-500 shadow-inner' 
+                : 'bg-white text-gray-800 border-gray-400 hover:border-black hover:text-black'
+            } ${isLoading || error ? 'opacity-50 pointer-events-none' : ''}`}
+          >
+            {showDemoCombo ? 'Hide Target Site Analysis' : 'Analyze Target Site'}
+          </button>
         </div>
       </div>
+
+      {/* GEMMA 4 INSIGHT PANEL */}
+      {showDemoCombo && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="bg-white p-5 sm:p-6 border-t-4 border-green-600 shadow-inner"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-full">
+              <h4 className="font-sans font-bold text-green-800 mb-2 flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 rounded-full border border-green-200 ${isLoadingInsight ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'}`}></span>
+                Gemma 4 Insight: Structural Binding Analysis
+              </h4>
+              
+              {isLoadingInsight ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-4">
+                  <LottieAnimation animationData={sandyLoadingData} size="sm" />
+                  Gemma 4 is analyzing structural data...
+                </div>
+              ) : insightError ? (
+                <p className="text-red-600 text-sm mt-2">{insightError}</p>
+              ) : insightData ? (
+                <div className="mt-3">
+                  <p className="text-gray-700 text-sm leading-relaxed mb-3">
+                    {insightData.summary}
+                  </p>
+                  {insightData.drug_assessment && (
+                    <p className="text-gray-700 text-sm leading-relaxed">
+                      <strong>Binding Assessment:</strong> {insightData.drug_assessment}
+                    </p>
+                  )}
+                  {insightData.fallback && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs rounded-md">
+                      <strong>Note:</strong> This analysis was generated without grounded literature context. Please run the PubMed crawler to enrich the Knowledge Graph for this target.
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
