@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Neolysis Enzyme Engineering API"
     VERSION: str = "0.2.0-staging"
     API_V1_STR: str = "/api/v1"
-    DEBUG: bool = False
+    DEBUG: bool | str = False
 
     # ── Security ───────────────────────────────────────────────────────────
     SECRET_KEY: str = "change-me-in-production-use-a-long-random-string"
@@ -69,6 +69,17 @@ class Settings(BaseSettings):
     ENZYME_FUNCTION_MODEL_MODE: str = "baseline"
     PROPERTY_SCORING_MODE: str = "baseline"
 
+    # -- Molecular docking MVP ---------------------------------------------
+    QUICKVINA_BIN: Optional[str] = None
+    DOCKING_WORKDIR: str = "storage/docking"
+    DOCKING_TIMEOUT_SECONDS: int = 300
+    KAGGLE_USERNAME: Optional[str] = None
+    KAGGLE_KEY: Optional[str] = None
+    KAGGLE_OWNER_USERNAME: Optional[str] = None
+    KAGGLE_KERNEL_VISIBILITY: str = "private"
+    KAGGLE_POLL_INTERVAL_SECONDS: int = 30
+    KAGGLE_TIMEOUT_SECONDS: int = 7200
+
     # ── External APIs ──────────────────────────────────────────────────────
     PUBCHEM_BASE_URL: str = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
     ALPHAFOLD_BASE_URL: str = "https://alphafold.ebi.ac.uk/files"
@@ -85,7 +96,7 @@ class Settings(BaseSettings):
     def parse_debug(cls, value):
         if isinstance(value, str):
             normalized = value.strip().lower()
-            if normalized in {"release", "production", "prod", "false", "0", "no", "off"}:
+            if normalized in {"release", "production", "prod", "false", "0", "no", "off", "warn", "warning"}:
                 return False
             if normalized in {"debug", "development", "dev", "true", "1", "yes", "on"}:
                 return True

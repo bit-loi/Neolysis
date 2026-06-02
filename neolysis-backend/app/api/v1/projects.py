@@ -1,86 +1,116 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-from app.api.deps import get_current_active_user
-from app.db.session import get_db
-from app.db.project_repository import ProjectRepository
-from app.schemas.project import ProjectCreate, ProjectOut
-from app.models.user import User
-from app.core.rate_limit import limiter
+from fastapi import APIRouter
+
+from app.schemas.project_workflow import (
+    ActiveSiteRecord,
+    ActiveSiteRequest,
+    AnalysisReportRecord,
+    DockingJobRecord,
+    DockingJobRequest,
+    EnzymeSequenceRecord,
+    EnzymeSequenceRequest,
+    EnzymeStructureRecord,
+    EnzymeStructureRequest,
+    EnzymeVariantRecord,
+    ProjectCreateRequest,
+    ProjectDetailResponse,
+    ProjectRecord,
+    SubstrateRecord,
+    SubstrateRequest,
+    VariantGenerateRequest,
+)
+from app.schemas.docking import DockingJobCreate, DockingJobWithResult
+from app.services.docking import docking_service
+from app.services.project_workflow import project_workflow_service
 
 router = APIRouter()
 
-@router.post("/", response_model=ProjectOut, status_code=status.HTTP_201_CREATED)
-@limiter.limit("10/minute")
-async def create_project(
-    request: Request,
-    project_in: ProjectCreate,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Create a new saved project for the authenticated user.
-    """
-    repo = ProjectRepository(db)
-    project = await repo.create(current_user.id, project_in)
-    return project
 
-@router.get("/", response_model=List[ProjectOut])
-async def list_projects(
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    List all projects owned by the authenticated user.
-    Enforces IDOR by strictly isolating queries to the user's ID.
-    """
-    repo = ProjectRepository(db)
-    return await repo.get_by_user(current_user.id)
+@router.post("", response_model=ProjectRecord)
+async def create_project(payload: ProjectCreateRequest) -> ProjectRecord:
+    return project_workflow_service.create_project(payload)
 
-@router.get("/{project_id}", response_model=ProjectOut)
-async def get_project(
-    project_id: int,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Get a specific project. Enforces IDOR by checking ownership.
-    """
-    repo = ProjectRepository(db)
-    project = await repo.get_by_id(project_id)
-    
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-        
-    # IDOR Protection check
-    if project.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Not enough permissions"
-        )
-        
-    return project
 
-@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_project(
-    project_id: int,
-    current_user: User = Depends(get_current_active_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Delete a specific project. Enforces IDOR by checking ownership before delete.
-    """
-    repo = ProjectRepository(db)
-    project = await repo.get_by_id(project_id)
-    
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-        
-    # IDOR Protection check
-    if project.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Not enough permissions"
-        )
-        
-    await repo.delete(project_id)
+@router.get("", response_model=list[ProjectRecord])
+async def list_projects() -> list[ProjectRecord]:
+    return project_workflow_service.list_projects()
+
+
+@router.get("/{project_id}", response_model=ProjectDetailResponse)
+async def get_project(project_id: str) -> ProjectDetailResponse:
+    return project_workflow_service.get_detail(project_id)
+
+
+@router.post("/{project_id}/sequence", response_model=EnzymeSequenceRecord)
+async def set_project_sequence(project_id: str, payload: EnzymeSequenceRequest) -> EnzymeSequenceRecord:
+    return project_workflow_service.set_sequence(project_id, payload)
+
+
+@router.post("/{project_id}/structure", response_model=EnzymeStructureRecord)
+async def set_project_structure(project_id: str, payload: EnzymeStructureRequest) -> EnzymeStructureRecord:
+    return project_workflow_service.set_structure(project_id, payload)
+
+
+@router.get("/{project_id}/structure", response_model=list[EnzymeStructureRecord])
+async def list_project_structures(project_id: str) -> list[EnzymeStructureRecord]:
+    return project_workflow_service.get_detail(project_id).structures
+
+
+@router.post("/{project_id}/substrates", response_model=SubstrateRecord)
+async def add_project_substrate(project_id: str, payload: SubstrateRequest) -> SubstrateRecord:
+    return project_workflow_service.add_substrate(project_id, payload)
+
+
+@router.get("/{project_id}/substrates", response_model=list[SubstrateRecord])
+async def list_project_substrates(project_id: str) -> list[SubstrateRecord]:
+    return project_workflow_service.get_detail(project_id).substrates
+
+
+@router.post("/{project_id}/active-site", response_model=ActiveSiteRecord)
+async def add_project_active_site(project_id: str, payload: ActiveSiteRequest) -> ActiveSiteRecord:
+    return project_workflow_service.add_active_site(project_id, payload)
+
+
+@router.get("/{project_id}/active-site", response_model=list[ActiveSiteRecord])
+async def list_project_active_sites(project_id: str) -> list[ActiveSiteRecord]:
+    return project_workflow_service.get_detail(project_id).active_sites
+
+
+@router.post("/{project_id}/variants/generate", response_model=list[EnzymeVariantRecord])
+async def generate_project_variants(project_id: str, payload: VariantGenerateRequest) -> list[EnzymeVariantRecord]:
+    return project_workflow_service.generate_variants(project_id, payload)
+
+
+@router.get("/{project_id}/variants", response_model=list[EnzymeVariantRecord])
+async def list_project_variants(project_id: str) -> list[EnzymeVariantRecord]:
+    return project_workflow_service.get_detail(project_id).variants
+
+
+@router.post("/{project_id}/docking-jobs", response_model=DockingJobRecord)
+async def add_project_docking_job(project_id: str, payload: DockingJobRequest) -> DockingJobRecord:
+    return project_workflow_service.add_docking_job(project_id, payload)
+
+
+@router.get("/{project_id}/docking-jobs", response_model=list[DockingJobRecord])
+async def list_project_docking_jobs(project_id: str) -> list[DockingJobRecord]:
+    return project_workflow_service.get_detail(project_id).docking_jobs
+
+
+@router.post("/{project_id}/docking/jobs", response_model=DockingJobWithResult)
+async def create_project_docking_job_v2(project_id: str, payload: DockingJobCreate) -> DockingJobWithResult:
+    job = docking_service.create_job(project_id, payload)
+    return docking_service.get_job(job.id)
+
+
+@router.get("/{project_id}/docking/jobs", response_model=list[DockingJobWithResult])
+async def list_project_docking_jobs_v2(project_id: str) -> list[DockingJobWithResult]:
+    return docking_service.list_project_jobs(project_id)
+
+
+@router.post("/{project_id}/reports/generate", response_model=AnalysisReportRecord)
+async def generate_project_report(project_id: str) -> AnalysisReportRecord:
+    return project_workflow_service.generate_report(project_id)
+
+
+@router.get("/{project_id}/reports", response_model=list[AnalysisReportRecord])
+async def list_project_reports(project_id: str) -> list[AnalysisReportRecord]:
+    return project_workflow_service.get_detail(project_id).reports

@@ -5,10 +5,26 @@ from typing import List
 from app.db.session import get_db
 from app.models.compound import Compound
 from app.models.docking import DockingResult
-from app.schemas.docking import DockingOut, DockingWithCompound
+from app.schemas.docking import DockingJobWithResult, DockingPoseResponse, DockingOut, DockingWithCompound
+from app.services.docking import docking_service
 from app.services.docking_store import docking_store
 
 router = APIRouter()
+
+
+@router.get("/jobs/{job_id}", response_model=DockingJobWithResult)
+async def get_live_docking_job(job_id: str) -> DockingJobWithResult:
+    return docking_service.get_job(job_id)
+
+
+@router.post("/jobs/{job_id}/run", response_model=DockingJobWithResult)
+async def run_live_docking_job(job_id: str) -> DockingJobWithResult:
+    return docking_service.run_job(job_id)
+
+
+@router.get("/jobs/{job_id}/pose", response_model=DockingPoseResponse)
+async def get_live_docking_pose(job_id: str) -> DockingPoseResponse:
+    return docking_service.get_pose(job_id)
 
 
 @router.get("/{target_id}", response_model=List[DockingWithCompound])

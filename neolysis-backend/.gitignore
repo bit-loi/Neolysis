@@ -22,3 +22,14 @@ Thumbs.db
 
 .vscode/
 .idea/
+
+# local database/runtime artifacts
+storage/
+*.sqlite
+*.sqlite3
+
+# generated or local-only PostgreSQL migration scratch files
+migrations/postgres/*.local.sql
+migrations/postgres/*.dump.sql
+migrations/postgres/*.bak.sql
+migrations/postgres/tmp/

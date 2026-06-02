@@ -1,6 +1,8 @@
-# Neolysis - Enzyme Engineering Platform for Industrial Biotechnology
+# Neolysis - Enzyme Sequence and Structure Intelligence
 
-Neolysis is a computational enzyme intelligence platform that helps biotech and industrial R&D teams analyze enzyme sequences, estimate relevant properties, prioritize variants, and plan wet-lab validation.
+Neolysis is an enzyme sequence and structure intelligence platform for prioritizing enzyme variants before wet-lab validation.
+
+It helps researchers identify promising enzyme mutations by combining sequence analysis, active-site reasoning, docking-aware scoring placeholders, and wet-lab validation reports.
 
 This staging version pivots Neolysis away from drug discovery and toward enzyme engineering for industrial biotechnology.
 
@@ -11,6 +13,9 @@ This staging version pivots Neolysis away from drug discovery and toward enzyme 
 - Basic protein feature extraction
 - Enzyme function prediction scaffold
 - Industrial property scoring scaffold
+- Project system for enzyme targets, structures, substrates, active sites, variants, docking jobs, and reports
+- PDB upload/paste structure workspace with 3D visualization
+- Manual active-site residue selection and residue-neighborhood analysis
 - Variant ranking
 - Mutation risk analysis
 - Agentic report generation
@@ -63,6 +68,11 @@ The FastAPI staging API focuses on enzyme engineering:
 | `POST /api/v1/variants/risk` | Analyze mutation risk |
 | `POST /api/v1/agents/analyze` | Run tool-using agentic workflow |
 | `POST /api/v1/reports/generate` | Generate structured report |
+| `POST /api/v1/projects` | Create enzyme engineering project workspace |
+| `POST /api/v1/projects/{id}/structure` | Save PDB structure context |
+| `POST /api/v1/projects/{id}/active-site` | Save manual active-site residues |
+| `POST /api/v1/projects/{id}/variants/generate` | Generate explainable structure-aware variant hypotheses |
+| `POST /api/v1/projects/{id}/docking-jobs` | Register lightweight docking job metadata |
 
 ## Frontend Routes
 
@@ -70,6 +80,7 @@ The FastAPI staging API focuses on enzyme engineering:
 | --- | --- |
 | `/` | Enzyme engineering landing page |
 | `/analyze` | Sequence analysis and report workflow |
+| `/structure` | Project-based sequence, structure, active-site, substrate, variant, and report workspace |
 | `/variants` | Variant ranking interface |
 | `/agent-report` | Agentic report interface |
 | `/methodology` | Scientific method and limitations |
@@ -165,5 +176,6 @@ Staging deployment is triggered only on pushes to the `staging` branch after all
 - Function prediction is a baseline scaffold, not a trained enzyme classifier.
 - Property scores are transparent sequence-level proxies.
 - Variant rankings are prioritization signals, not measured improvements.
+- Structure and docking fields support early-stage hypothesis generation, not high-fidelity experimental pose prediction.
 - Wet-lab validation is required before industrial use.
 - The WASM molecular dynamics sandbox is optional, experimental, and not required for the core sequence intelligence MVP.
