@@ -7,10 +7,19 @@ import { Menu, X } from 'lucide-react';
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/targets', label: 'Targets' },
-  { href: '/about', label: 'About' },
+  { href: '/analyze', label: 'Analyze' },
+  { href: '/variants', label: 'Variants' },
+  { href: '/agent-report', label: 'Agent Report' },
   { href: '/methodology', label: 'Methodology' },
+  { href: '/about', label: 'About' },
 ];
+
+const experimentalNavLinks =
+  process.env.NEXT_PUBLIC_ENABLE_MD_ENGINE === 'true'
+    ? [{ href: '/experimental/md-sandbox', label: 'MD Sandbox' }]
+    : [];
+
+const visibleNavLinks = [...navLinks, ...experimentalNavLinks];
 
 export function Navbar() {
   const pathname = usePathname();
@@ -52,7 +61,7 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex md:items-center md:gap-10">
-            {navLinks.map((link) => {
+            {visibleNavLinks.map((link) => {
               const isActive = pathname === link.href;
 
               return (
@@ -110,7 +119,7 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-white border-t border-gray-100">
           <div className="px-6 py-4 space-y-1">
-            {navLinks.map((link) => {
+            {visibleNavLinks.map((link) => {
               const isActive = pathname === link.href;
 
               return (

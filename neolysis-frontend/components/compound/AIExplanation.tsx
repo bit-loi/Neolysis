@@ -39,7 +39,7 @@ export function AIExplanation({ target, compound }: AIExplanationProps) {
         
         const data = await response.json();
         setInsight(data);
-      } catch (err) {
+      } catch {
         setError('Unable to load AI insight. Please try again.');
       } finally {
         setIsLoading(false);

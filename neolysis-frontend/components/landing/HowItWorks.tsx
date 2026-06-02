@@ -1,32 +1,29 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { ArrowRight } from 'lucide-react';
 
-const useCases = [
+const workflow = [
   {
-    title: 'For Researchers',
-    description:
-      'Explore validated protein targets across four NTDs. Access pre-computed docking scores, 3D binding site visualizations, and AI-generated insights to accelerate your early-stage drug discovery.',
-    cta: 'Explore Protein Targets',
-    href: '/targets',
+    title: 'Analyze sequences',
+    description: 'Validate FASTA inputs, clean protein sequences, and extract baseline protein descriptors.',
+    href: '/analyze',
+    cta: 'Open Analyzer',
   },
   {
-    title: 'For Students',
-    description:
-      'Learn computational drug discovery with interactive 3D protein structures and AI-guided explanations. No expensive software or HPC infrastructure required — just a browser.',
-    cta: 'Start Learning',
+    title: 'Score process fit',
+    description: 'Estimate thermostability, pH fit, solubility, and condition fit with transparent staging proxies.',
     href: '/methodology',
+    cta: 'Review Method',
   },
   {
-    title: 'For Developers',
-    description:
-      'Access open data from AlphaFold DB, RCSB PDB, and PubChem through our unified platform. Integrate molecular insights into your own research tools and pipelines.',
-    cta: 'View Documentation',
-    href: '/about',
+    title: 'Rank variants',
+    description: 'Compare candidate mutations with risk flags and wet-lab priority labels.',
+    href: '/variants',
+    cta: 'Rank Variants',
   },
 ];
 
@@ -37,48 +34,43 @@ export function HowItWorks() {
   return (
     <section ref={ref} className="section-light overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-2">
-        {/* Left: Text content */}
-        <div className="px-8 sm:px-12 lg:px-16 xl:px-24 py-20 lg:py-28">
+        <div className="px-8 py-20 sm:px-12 lg:px-16 lg:py-28 xl:px-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-4xl sm:text-5xl font-serif text-gray-900 leading-tight mb-16">
-              Get Started
+            <h2 className="mb-16 font-serif text-4xl leading-tight text-gray-900 sm:text-5xl">
+              Enzyme workflow
               <br />
-              <em className="italic text-gray-500">With Neolysis</em>
+              <em className="italic text-gray-500">From sequence to validation plan</em>
             </h2>
           </motion.div>
 
-          <div className="space-y-0">
-            {useCases.map((useCase, i) => (
+          <div>
+            {workflow.map((item, i) => (
               <motion.div
-                key={useCase.title}
+                key={item.title}
                 initial={{ opacity: 0, y: 40 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: i * 0.2, duration: 0.6 }}
-                className="py-8 border-b border-gray-300 last:border-b-0"
+                className="border-b border-gray-300 py-8 last:border-b-0"
               >
-                <h3 className="text-2xl sm:text-3xl font-serif text-gray-900 mb-3">
-                  {useCase.title}
+                <h3 className="mb-3 font-serif text-2xl text-gray-900 sm:text-3xl">
+                  {item.title}
                 </h3>
-                <p className="text-gray-600 text-base leading-relaxed mb-5 max-w-lg">
-                  {useCase.description}
+                <p className="mb-5 max-w-lg text-base leading-relaxed text-gray-600">
+                  {item.description}
                 </p>
-                <Link
-                  href={useCase.href}
-                  className="btn-bordered btn-bordered-dark"
-                >
+                <Link href={item.href} className="btn-bordered btn-bordered-dark">
                   <ArrowRight className="h-4 w-4" />
-                  {useCase.cta}
+                  {item.cta}
                 </Link>
               </motion.div>
             ))}
           </div>
         </div>
 
-        {/* Right: Image flush to edge */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
@@ -87,7 +79,7 @@ export function HowItWorks() {
         >
           <Image
             src="/researcher-illustration.jpg"
-            alt="Researcher in laboratory"
+            alt="Researcher preparing enzyme validation workflow"
             fill
             className="object-cover"
           />

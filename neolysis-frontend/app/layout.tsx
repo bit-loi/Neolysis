@@ -5,8 +5,8 @@ import { Footer } from '@/components/layout/Footer';
 import { ToastProvider } from '@/components/ui/Toast';
 
 export const metadata: Metadata = {
-  title: 'Neolysis — AI Drug Discovery for ASEAN NTD Research',
-  description: 'Open-access platform for leptospirosis, scrub typhus, melioidosis, and dengue research. Explore 3D protein structures, pre-computed docking scores, and AI-generated insights.',
+  title: 'Neolysis - Enzyme Engineering Platform',
+  description: 'Computational enzyme intelligence for industrial biotechnology. Analyze sequences, estimate properties, rank variants, and plan wet-lab validation.',
   icons: {
     icon: '/favicon.ico',
   },

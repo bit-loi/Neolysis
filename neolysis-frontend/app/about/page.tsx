@@ -1,133 +1,76 @@
-'use client';
+import Link from 'next/link';
+import { ArrowRight, CheckCircle2, FlaskConical, ShieldAlert } from 'lucide-react';
 
-import { FlaskConical, Database, Users, Globe } from 'lucide-react';
-import { motion } from 'framer-motion';
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } }
-};
-
-const staggerChildren = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
+export const metadata = {
+  title: 'About | Neolysis',
+  description: 'Neolysis is a computational enzyme intelligence platform for industrial biotechnology.',
 };
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#f5f5f0] text-black pt-24 pb-16 grain-overlay">
-      <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="text-5xl md:text-6xl font-serif font-bold text-black mb-12 tracking-tight"
-        >
-          About Neolysis
-        </motion.h1>
-        
-        <div className="space-y-20 font-sans">
-          <motion.section variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <h2 className="text-3xl font-serif font-bold text-black mb-6">Our Mission</h2>
-            <p className="text-gray-800 leading-relaxed text-lg max-w-3xl">
-              Neolysis is an open-access computational drug discovery platform designed specifically for 
-              neglected tropical diseases (NTDs) that disproportionately affect ASEAN populations. 
-              We aim to democratize early-stage drug discovery by providing free access to validated 
-              protein targets, pre-computed molecular docking scores, and AI-generated research insights.
-            </p>
-          </motion.section>
-
-          <motion.section variants={staggerChildren} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-50px' }}>
-            <motion.h2 variants={fadeInUp} className="text-3xl font-serif font-bold text-black mb-8 border-b border-gray-300/60 pb-4">Data Sources</motion.h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-gray-300/60 border border-gray-300/60 p-px">
-              <DataSourceCard
-                icon={<Database className="h-5 w-5 text-gray-700" />}
-                name="AlphaFold DB"
-                description="AI-predicted protein structures with confidence scores for validated drug targets."
-                link="https://alphafold.ebi.ac.uk"
-              />
-              <DataSourceCard
-                icon={<FlaskConical className="h-5 w-5 text-gray-700" />}
-                name="RCSB PDB"
-                description="Experimental protein structures validated by X-ray crystallography and cryo-EM."
-                link="https://www.rcsb.org"
-              />
-              <DataSourceCard
-                icon={<Globe className="h-5 w-5 text-gray-700" />}
-                name="PubChem"
-                description="Curated chemical compound database with molecular properties and SMILES structures."
-                link="https://pubchem.ncbi.nlm.nih.gov"
-              />
-              <DataSourceCard
-                icon={<Users className="h-5 w-5 text-gray-700" />}
-                name="AutoDock Vina"
-                description="Open-source molecular docking software for predicting binding affinities."
-                link="https://vina.scripps.edu"
-              />
-            </div>
-          </motion.section>
-
-          <motion.section variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <h2 className="text-3xl font-serif font-bold text-black mb-6">Open Access Commitment</h2>
-            <p className="text-gray-800 leading-relaxed max-w-3xl mb-8 text-lg">
-              All data on Neolysis is freely accessible without registration or licensing requirements. 
-              Our platform is built on the principle that scientific tools should serve the global research 
-              community, especially for diseases that predominantly affect under-resourced regions.
-            </p>
-            <div className="bg-[#e8e6e0] p-6 border-l-4 border-gray-500 flex items-start gap-4">
-              <Globe className="h-6 w-6 text-black shrink-0 mt-0.5" />
-              <p className="text-sm text-gray-800 leading-relaxed">
-                <strong className="text-black">Disclaimer:</strong> This platform is designed for research exploration only. AI-generated insights are not 
-                clinical advice and should be validated through appropriate experimental methods.
-              </p>
-            </div>
-          </motion.section>
-
-          <motion.section variants={staggerChildren} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <motion.h2 variants={fadeInUp} className="text-3xl font-serif font-bold text-black mb-8 border-b border-gray-300/60 pb-4">Platform Statistics</motion.h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-300/60 border border-gray-300/60 p-px">
-              <StatCard label="Diseases" value="4" />
-              <StatCard label="Protein Targets" value="12+" />
-              <StatCard label="Drug Candidates" value="50+" />
-              <StatCard label="Open Data" value="100%" />
-            </div>
-          </motion.section>
+    <div className="min-h-screen bg-[#f5f5f0] pt-28 pb-16 text-[#171717] grain-overlay">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl">
+          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#5BA8B9]">
+            About Neolysis
+          </p>
+          <h1 className="mt-3 font-serif text-4xl font-bold tracking-tight sm:text-5xl">
+            Enzyme engineering software for candidate prioritization.
+          </h1>
+          <p className="mt-6 text-lg leading-relaxed text-gray-700">
+            Neolysis helps biotech and industrial R&amp;D teams analyze enzyme sequences, estimate relevant properties, prioritize variants, and plan wet-lab validation for industrial use cases.
+          </p>
         </div>
+
+        <div className="mt-12 grid gap-6 md:grid-cols-3">
+          <section className="border border-gray-300 bg-white p-6">
+            <FlaskConical className="h-6 w-6 text-[#5BA8B9]" />
+            <h2 className="mt-5 font-serif text-2xl font-semibold">What it does</h2>
+            <ul className="mt-4 space-y-3 text-sm leading-relaxed text-gray-700">
+              <li>FASTA validation and sequence cleaning</li>
+              <li>Protein feature extraction</li>
+              <li>Baseline enzyme function prediction scaffold</li>
+              <li>Industrial property scoring scaffold</li>
+              <li>Variant ranking and mutation risk flags</li>
+              <li>Agentic validation planning reports</li>
+            </ul>
+          </section>
+
+          <section className="border border-gray-300 bg-white p-6">
+            <CheckCircle2 className="h-6 w-6 text-[#5BA8B9]" />
+            <h2 className="mt-5 font-serif text-2xl font-semibold">Who it serves</h2>
+            <ul className="mt-4 space-y-3 text-sm leading-relaxed text-gray-700">
+              <li>Industrial biotech R&amp;D teams</li>
+              <li>Protein engineering labs</li>
+              <li>Synthetic biology startups</li>
+              <li>Food biotech, detergent, textile, and biofuel teams</li>
+              <li>Academic enzyme engineering groups</li>
+            </ul>
+          </section>
+
+          <section className="border border-gray-300 bg-white p-6">
+            <ShieldAlert className="h-6 w-6 text-[#5BA8B9]" />
+            <h2 className="mt-5 font-serif text-2xl font-semibold">What it is not</h2>
+            <ul className="mt-4 space-y-3 text-sm leading-relaxed text-gray-700">
+              <li>Not experimental proof of activity</li>
+              <li>Not a guarantee of better enzymes</li>
+              <li>Not a replacement for wet-lab validation</li>
+              <li>Not an autonomous final protein design system</li>
+            </ul>
+          </section>
+        </div>
+
+        <section className="mt-10 border border-gray-300 bg-white p-8">
+          <h2 className="font-serif text-3xl font-semibold">Scientific positioning</h2>
+          <p className="mt-4 max-w-4xl leading-relaxed text-gray-700">
+            The staging platform uses deterministic tools and baseline computational scaffolds to organize sequence-level evidence. The agentic layer coordinates those tools and explains outputs; it does not invent scientific results.
+          </p>
+          <Link href="/analyze" className="btn-bordered btn-bordered-dark mt-8">
+            <ArrowRight className="h-4 w-4" />
+            Analyze a Sequence
+          </Link>
+        </section>
       </div>
     </div>
-  );
-}
-
-function DataSourceCard({ name, description, link, icon }: { name: string; description: string; link: string; icon: React.ReactNode }) {
-  return (
-    <motion.div variants={fadeInUp} className="bg-[#f5f5f0] p-8 flex flex-col h-full hover:bg-white transition-colors duration-300">
-      <div className="flex items-center gap-3 mb-4">
-        {icon}
-        <h3 className="text-xl font-serif font-bold text-black">{name}</h3>
-      </div>
-      <p className="text-sm text-gray-700 leading-relaxed flex-grow mb-8">{description}</p>
-      <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn-bordered btn-bordered-dark mt-auto w-fit text-sm py-2 px-5 font-bold"
-      >
-        Visit Source <span>→</span>
-      </a>
-    </motion.div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <motion.div variants={fadeInUp} className="bg-[#f5f5f0] p-8 text-center hover:bg-white transition-colors duration-300">
-      <div className="text-4xl md:text-5xl font-serif font-bold text-black mb-3">{value}</div>
-      <div className="text-xs text-gray-700 font-bold tracking-[0.1em] uppercase font-sans">{label}</div>
-    </motion.div>
   );
 }

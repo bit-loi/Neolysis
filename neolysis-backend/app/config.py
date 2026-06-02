@@ -22,13 +22,14 @@ Supabase PostgreSQL (native asyncpg — NOT Supabase SDK):
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 from typing import Optional
 
 
 class Settings(BaseSettings):
     # ── App ────────────────────────────────────────────────────────────────
-    PROJECT_NAME: str = "Neolysis API"
-    VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "Neolysis Enzyme Engineering API"
+    VERSION: str = "0.2.0-staging"
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = False
 
@@ -63,6 +64,11 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     PUBMED_MAX_RESULTS: int = 100  # per search term in crawler
 
+    # -- Enzyme engineering staging modes ----------------------------------
+    PROTEIN_EMBEDDING_MODE: str = "baseline"
+    ENZYME_FUNCTION_MODEL_MODE: str = "baseline"
+    PROPERTY_SCORING_MODE: str = "baseline"
+
     # ── External APIs ──────────────────────────────────────────────────────
     PUBCHEM_BASE_URL: str = "https://pubchem.ncbi.nlm.nih.gov/rest/pug"
     ALPHAFOLD_BASE_URL: str = "https://alphafold.ebi.ac.uk/files"
@@ -73,6 +79,17 @@ class Settings(BaseSettings):
 
     # ── DB Keepalive ───────────────────────────────────────────────────────
     DB_KEEPALIVE_INTERVAL_SECONDS: int = 300  # 5 minutes
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, value):
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "production", "prod", "false", "0", "no", "off"}:
+                return False
+            if normalized in {"debug", "development", "dev", "true", "1", "yes", "on"}:
+                return True
+        return value
 
     model_config = SettingsConfigDict(
         env_file=".env",

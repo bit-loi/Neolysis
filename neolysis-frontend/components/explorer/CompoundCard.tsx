@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Check, X, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Check, AlertTriangle } from 'lucide-react';
 import { CompoundWithDocking } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { AffinityBar } from '@/components/ui/AffinityBar';

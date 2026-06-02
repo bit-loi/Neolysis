@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { Compound } from '@/lib/types';
 import { getPubChemImageUrl, getPubChemLink } from '@/lib/utils';
 import { ExternalLink } from 'lucide-react';

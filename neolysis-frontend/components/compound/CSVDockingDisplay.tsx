@@ -14,7 +14,7 @@ interface CSVDockingDisplayProps {
   targetId?: string;
 }
 
-export function CSVDockingDisplay({ docking, targetId }: CSVDockingDisplayProps) {
+export function CSVDockingDisplay({ docking }: CSVDockingDisplayProps) {
   const { affinity, ligand_eff, mw, logp, composite, confidence } = docking;
 
   return (

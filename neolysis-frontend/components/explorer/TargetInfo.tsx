@@ -3,7 +3,7 @@
 import { ExternalLink } from 'lucide-react';
 import { ProteinTarget } from '@/lib/types';
 import { DiseaseBadge } from '@/components/targets/DiseaseBadge';
-import { getAlphaFoldUrl, getPdbUrl } from '@/lib/utils';
+import { getAlphaFoldUrl } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 interface TargetInfoProps {

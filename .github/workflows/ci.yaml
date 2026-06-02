@@ -1,0 +1,131 @@
+name: Neolysis CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - develop
+  pull_request:
+    branches:
+      - main
+      - staging
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend API
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: neolysis-backend
+    env:
+      DEBUG: "false"
+      DATABASE_URL: sqlite+aiosqlite:///./staging-ci.db
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: staging-ci-only-change-in-deployments
+      PROTEIN_EMBEDDING_MODE: baseline
+      ENZYME_FUNCTION_MODEL_MODE: baseline
+      PROPERTY_SCORING_MODE: baseline
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: neolysis-backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run staging API tests
+        run: |
+          python -m pytest tests/test_enzyme_api.py tests/test_sequence_services.py
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: neolysis-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: neolysis-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  rust-wasm:
+    name: Rust WASM Engine
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: neolysis-md-engine
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: neolysis-md-engine
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Run Rust tests
+        run: cargo test
+
+      - name: Check WASM build
+        run: cargo check --target wasm32-unknown-unknown
+
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    needs:
+      - backend
+      - frontend
+      - rust-wasm
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/staging'
+    steps:
+      - name: Trigger staging deploy webhook
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ secrets['STAGING_DEPLOY_WEBHOOK_URL'] }}
+        run: |
+          if [ -z "$DEPLOY_WEBHOOK_URL" ]; then
+            echo "STAGING_DEPLOY_WEBHOOK_URL is not configured. CI passed; deploy was skipped."
+            exit 0
+          fi
+
+          curl --fail --request POST "$DEPLOY_WEBHOOK_URL"

@@ -70,6 +70,7 @@ export function NewsSection() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollIndex, setScrollIndex] = useState(0);
   const binaryPattern = useMemo(() => generateBinaryPattern(), []);
+  void binaryPattern;
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
