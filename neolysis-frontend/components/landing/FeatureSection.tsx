@@ -2,7 +2,7 @@
 
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { Bot, Factory, FlaskConical, GitBranch, ShieldAlert } from 'lucide-react';
+import { Bot, ClipboardCheck, Factory, FlaskConical, GitBranch, ShieldAlert } from 'lucide-react';
 
 const features = [
   {
@@ -29,6 +29,11 @@ const features = [
     title: 'Scientific safety',
     description: 'Every report labels outputs as computational estimates that require wet-lab validation.',
     icon: ShieldAlert,
+  },
+  {
+    title: 'Validation planning',
+    description: 'Structured next-step reports help teams plan assays, controls, and wet-lab follow-up.',
+    icon: ClipboardCheck,
   },
 ];
 

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
@@ -50,13 +51,14 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span
-              className={`text-2xl font-bold tracking-tight transition-colors duration-500 font-serif ${
-                showDark ? 'text-white' : 'text-gray-900'
-              }`}
-            >
-              NEOLYSIS
-            </span>
+            <Image
+              src={showDark ? '/logo-white.png' : '/logo.png'}
+              alt="Neolysis"
+              width={144}
+              height={80}
+              priority
+              className="h-14 w-auto object-contain transition duration-500"
+            />
           </Link>
 
           {/* Desktop Nav */}

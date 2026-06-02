@@ -8,7 +8,9 @@ export const metadata: Metadata = {
   title: 'Neolysis - Enzyme Engineering Platform',
   description: 'Computational enzyme intelligence for industrial biotechnology. Analyze sequences, estimate properties, rank variants, and plan wet-lab validation.',
   icons: {
-    icon: '/favicon.ico',
+    icon: [{ url: '/favicon-white.png', type: 'image/png' }],
+    shortcut: '/favicon-white.png',
+    apple: '/favicon-white.png',
   },
 };
 
