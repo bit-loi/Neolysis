@@ -66,6 +66,7 @@ The FastAPI staging API focuses on enzyme engineering:
 | `POST /api/v1/properties/score` | Baseline industrial property scoring |
 | `POST /api/v1/variants/rank` | Rank candidate variants |
 | `POST /api/v1/variants/risk` | Analyze mutation risk |
+| `POST /api/v1/variants/quantum-rank` | Quantum-optimized variant selection (QAOA vs Classical ILP) |
 | `POST /api/v1/agents/analyze` | Run tool-using agentic workflow |
 | `POST /api/v1/reports/generate` | Generate structured report |
 | `POST /api/v1/projects` | Create enzyme engineering project workspace |
@@ -82,6 +83,7 @@ The FastAPI staging API focuses on enzyme engineering:
 | `/analyze` | Sequence analysis and report workflow |
 | `/structure` | Project-based sequence, structure, active-site, substrate, variant, and report workspace |
 | `/variants` | Variant ranking interface |
+| `/variants/quantum` | Quantum-optimized variant selection interface (QAOA vs Classical ILP) |
 | `/agent-report` | Agentic report interface |
 | `/methodology` | Scientific method and limitations |
 | `/about` | Product positioning |
@@ -90,6 +92,24 @@ The FastAPI staging API focuses on enzyme engineering:
 Legacy drug-discovery routes are no longer linked from the active UI. Direct visits to old target and compound pages redirect to `/analyze`.
 
 The MD sandbox route is disabled unless `NEXT_PUBLIC_ENABLE_MD_ENGINE=true` is set. It is a simplified browser-based simulation sandbox for future structure-aware enzyme engineering, not a validated protein dynamics engine and not part of the core enzyme scoring workflow.
+
+## Quantum-Optimized Enzyme Variant Selection
+
+Neolysis includes a quantum optimization module for multi-position enzyme mutation combination selection using **QAOA via Qiskit Aer** compared against a **PuLP Classical ILP** baseline.
+
+### QUBO Problem Formulation
+
+Given candidate mutation positions $p \in \{1, \dots, M\}$ and candidate substitution options $s \in O_p$ (including wild-type):
+- Binary Decision Variable: $x_{p,s} \in \{0, 1\}$ (qubit count $N = \sum_p |O_p|$).
+- Objective function to minimize:
+  $$E(x) = \sum_{p,s} (-\text{score}_{p,s} + \text{risk}_{p,s}) x_{p,s} + A \sum_p \left(\sum_s x_{p,s} - 1\right)^2 + B \sum_{(i,j) \in \text{incompatible}} x_i x_j + C \text{Penalty}_{\text{max\_mut}}$$
+
+### Key Architectural Principles & Verification
+
+1. **Explicit Solver Labeling:** The quantum solver is accurately identified as `Qiskit Aer SamplerV2 / Statevector QAOA`.
+2. **Automated Correctness Check:** QAOA output energy is automatically verified against an exact brute-force ground-truth solver on a 4-qubit test problem before reporting results.
+3. **Honest Penalty Accounting:** If any solver leaves a position unassigned or violates constraints, penalty costs are **included in the final net score**, preventing false reports of infeasible states as valid scores.
+4. **Isolated Timings:** Pure solver computation time (ms) is isolated from HTTP and serialization I/O.
 
 ## Tech Stack
 
