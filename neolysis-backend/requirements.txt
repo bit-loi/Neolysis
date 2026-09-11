@@ -28,6 +28,7 @@ pandas
 # ── RAG / Vector Store ────────────────────────
 qdrant-client
 sentence-transformers
+transformers
 torch
 
 # ── ADMET Prediction ──────────────────────────

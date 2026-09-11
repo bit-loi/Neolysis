@@ -24,6 +24,7 @@ Supabase PostgreSQL (native asyncpg — NOT Supabase SDK):
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator
 from typing import Optional
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
 class Settings(BaseSettings):
@@ -66,6 +67,8 @@ class Settings(BaseSettings):
 
     # -- Enzyme engineering staging modes ----------------------------------
     PROTEIN_EMBEDDING_MODE: str = "baseline"
+    PROTEIN_EMBEDDING_MODEL: str = "facebook/esm2_t6_8M_UR50D"
+    PROTEIN_EMBEDDING_MAX_RESIDUES: int = 1022
     ENZYME_FUNCTION_MODEL_MODE: str = "baseline"
     PROPERTY_SCORING_MODE: str = "baseline"
 
@@ -103,7 +106,8 @@ class Settings(BaseSettings):
         return value
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        # Local backend config first; Neon CLI's root file overrides it when present.
+        env_file=(".env", ".env.local", "../.env.local"),
         case_sensitive=True,
         extra="ignore",
     )
@@ -117,11 +121,31 @@ class Settings(BaseSettings):
           2. Assembled from SUPABASE_DB_* parts
         """
         if self.SUPABASE_DB_HOST and self.SUPABASE_DB_USER and self.SUPABASE_DB_PASSWORD:
-            return (
+            return self._async_database_url(
                 f"postgresql+asyncpg://{self.SUPABASE_DB_USER}:{self.SUPABASE_DB_PASSWORD}"
                 f"@{self.SUPABASE_DB_HOST}:{self.SUPABASE_DB_PORT}/{self.SUPABASE_DB_NAME}"
             )
-        return self.DATABASE_URL
+        return self._async_database_url(self.DATABASE_URL)
+
+    @staticmethod
+    def _async_database_url(database_url: str) -> str:
+        """Convert provider-style PostgreSQL URLs into SQLAlchemy asyncpg URLs."""
+        parsed = urlsplit(database_url)
+        scheme = parsed.scheme
+        if scheme in {"postgres", "postgresql"}:
+            scheme = "postgresql+asyncpg"
+
+        query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+        # Neon emits libpq parameters. asyncpg uses `ssl` and does not accept
+        # libpq's channel_binding parameter.
+        ssl_mode = query.pop("sslmode", None)
+        query.pop("channel_binding", None)
+        if ssl_mode and "ssl" not in query:
+            query["ssl"] = ssl_mode
+
+        return urlunsplit(
+            (scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment)
+        )
 
 
 settings = Settings()

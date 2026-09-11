@@ -2,6 +2,7 @@ from app.schemas.property import TargetConditions
 from app.schemas.variant import RankedVariant, VariantCandidate, VariantRankResponse
 from app.services.mutation_risk import mutation_risk_service
 from app.services.property_scoring import property_scoring_service
+from app.services.uncertainty import uncertainty_estimate
 
 
 class VariantRankingService:
@@ -39,6 +40,7 @@ class VariantRankingService:
                 + mutation_warnings
             )
 
+            confidence = round(min(score.confidence, risk.confidence), 3)
             ranked.append(
                 RankedVariant(
                     rank=0,
@@ -47,7 +49,12 @@ class VariantRankingService:
                     mutation_summary=mutation_summary,
                     predicted_fit_score=round(adjusted_fit, 3),
                     risk_score=risk.risk_score,
-                    confidence=round(min(score.confidence, risk.confidence), 3),
+                    confidence=confidence,
+                    uncertainty=uncertainty_estimate(
+                        confidence,
+                        "Variant confidence is capped by the least-confident scoring component.",
+                        "Ranking uncertainty is uncalibrated and does not represent probability of assay success.",
+                    ),
                     wet_lab_priority=self._priority(adjusted_fit, risk.risk_score),
                     explanation=(
                         "Ranked by baseline industrial fit score adjusted for sequence-level mutation risk. "

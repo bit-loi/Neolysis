@@ -3,6 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.sequence import SequenceInput
+from app.schemas.scientific import UncertaintyEstimate
 
 
 class EnzymeFunctionRequest(SequenceInput):
@@ -19,6 +20,9 @@ class EmbeddingResult(BaseModel):
     dimensions: int
     mode: str
     model_version: str
+    provider: str = "neolysis"
+    status: str = "completed"
+    fallback_reason: Optional[str] = None
     limitations: List[str] = Field(default_factory=list)
 
 
@@ -28,6 +32,7 @@ class EnzymeFunctionPrediction(BaseModel):
     predicted_family: str
     predicted_ec_class: Optional[str] = None
     confidence: float = Field(..., ge=0, le=1)
+    uncertainty: Optional[UncertaintyEstimate] = None
     explanation: str
     evidence: List[str] = Field(default_factory=list)
     method: str

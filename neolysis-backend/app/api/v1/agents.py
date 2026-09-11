@@ -8,4 +8,4 @@ router = APIRouter()
 
 @router.post("/analyze", response_model=AgentAnalysisResponse)
 async def analyze_with_agent(payload: AgentAnalysisRequest) -> AgentAnalysisResponse:
-    return agent_orchestrator.analyze(payload)
+    return await agent_orchestrator.analyze(payload)

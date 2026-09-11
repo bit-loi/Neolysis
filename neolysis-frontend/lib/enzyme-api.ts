@@ -45,6 +45,24 @@ export interface PropertyIndicator {
   explanation: string;
 }
 
+export interface UncertaintyEstimate {
+  confidence: number;
+  uncertainty: number;
+  level: 'low' | 'medium' | 'high';
+  basis: string[];
+  calibration_status: 'uncalibrated' | 'externally_calibrated';
+}
+
+export interface EmbeddingResult {
+  dimensions: number;
+  mode: string;
+  model_version: string;
+  provider: string;
+  status: string;
+  fallback_reason?: string | null;
+  limitations: string[];
+}
+
 export interface PropertyScoreResult {
   thermostability: PropertyIndicator;
   ph_fit: PropertyIndicator;
@@ -53,6 +71,7 @@ export interface PropertyScoreResult {
   industrial_fit_score: number;
   risk_flags: string[];
   confidence: number;
+  uncertainty?: UncertaintyEstimate | null;
   method: string;
   model_version: string;
   limitations: string[];
@@ -62,6 +81,7 @@ export interface EnzymePrediction {
   predicted_family: string;
   predicted_ec_class?: string | null;
   confidence: number;
+  uncertainty?: UncertaintyEstimate | null;
   explanation: string;
   evidence: string[];
   method: string;
@@ -77,6 +97,7 @@ export interface RankedVariant {
   predicted_fit_score: number;
   risk_score: number;
   confidence: number;
+  uncertainty?: UncertaintyEstimate | null;
   wet_lab_priority: string;
   explanation: string;
   risk_flags: string[];
@@ -102,6 +123,7 @@ export interface AgentAnalysisResponse {
       features?: ProteinFeatureResult | null;
     };
     enzyme_function?: {
+      embedding?: EmbeddingResult | null;
       prediction: EnzymePrediction;
     };
     property_scoring?: PropertyScoreResult;
@@ -109,6 +131,21 @@ export interface AgentAnalysisResponse {
     report?: Record<string, unknown>;
   };
   final_report: string;
+  provenance: {
+    analysis_id: string;
+    created_at: string;
+    input_sha256: string;
+    deterministic_seed: number;
+    components: Array<{
+      component: string;
+      method: string;
+      model_version: string;
+      status: string;
+    }>;
+    llm_used: boolean;
+    llm_model?: string | null;
+    llm_policy: string;
+  };
   limitations: string[];
 }
 
@@ -151,6 +188,7 @@ export function analyzeSequence(body: {
   variants?: VariantCandidate[];
   user_question?: string;
   enzyme_class_hint?: string;
+  narrative_mode?: 'deterministic' | 'llm';
 }) {
   return postJson<AgentAnalysisResponse, typeof body>('/agents/analyze', body);
 }

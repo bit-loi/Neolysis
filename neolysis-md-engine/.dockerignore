@@ -1,0 +1,8 @@
+target/
+pkg/
+.git
+.github
+.appveyor.yml
+.travis.yml
+*.md
+LICENSE_*

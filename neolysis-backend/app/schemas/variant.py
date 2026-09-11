@@ -3,6 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from app.schemas.property import TargetConditions
+from app.schemas.scientific import UncertaintyEstimate
 
 
 class VariantCandidate(BaseModel):
@@ -34,6 +35,7 @@ class MutationRiskResult(BaseModel):
     conserved_region_warning: Optional[str] = None
     active_site_warning: Optional[str] = None
     confidence: float = Field(..., ge=0, le=1)
+    uncertainty: Optional[UncertaintyEstimate] = None
     limitations: List[str] = Field(default_factory=list)
 
 

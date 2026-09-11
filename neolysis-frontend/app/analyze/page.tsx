@@ -23,6 +23,7 @@ export default function AnalyzePage() {
   const [result, setResult] = useState<AgentAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [narrativeMode, setNarrativeMode] = useState<'deterministic' | 'llm'>('deterministic');
 
   const updateCondition = (key: keyof TargetConditions, value: string) => {
     setConditions((current) => ({
@@ -48,6 +49,7 @@ export default function AnalyzePage() {
         sequence,
         target_conditions: conditions,
         user_question: 'Prioritize this enzyme candidate for the selected industrial conditions.',
+        narrative_mode: narrativeMode,
       });
       setResult(response);
     } catch (err) {
@@ -60,6 +62,7 @@ export default function AnalyzePage() {
   const validation = result?.structured_analysis.sequence?.validation;
   const features = result?.structured_analysis.sequence?.features;
   const prediction = result?.structured_analysis.enzyme_function?.prediction;
+  const embedding = result?.structured_analysis.enzyme_function?.embedding;
   const scoring = result?.structured_analysis.property_scoring;
 
   return (
@@ -147,6 +150,12 @@ export default function AnalyzePage() {
                   options={['detergent', 'food biotech', 'textile', 'biofuel', 'academic research', 'custom']}
                   onChange={(value) => updateCondition('use_case', value)}
                 />
+                <LabeledSelect
+                  label="Report narrative"
+                  value={narrativeMode}
+                  options={['deterministic', 'llm']}
+                  onChange={(value) => setNarrativeMode(value as 'deterministic' | 'llm')}
+                />
               </div>
               <button
                 type="submit"
@@ -186,6 +195,8 @@ export default function AnalyzePage() {
                   <Metric label="GRAVY" value={features.gravy ?? 'N/A'} />
                   <Metric label="Isoelectric point" value={features.isoelectric_point ?? 'N/A'} />
                   <Metric label="Method" value={features.method} />
+                  {embedding && <Metric label="Embedding" value={`${embedding.mode} / ${embedding.status}`} />}
+                  {embedding && <Metric label="Embedding model" value={embedding.model_version} />}
                 </dl>
               ) : (
                 <p className="text-sm text-gray-600">No feature result yet.</p>
@@ -200,6 +211,7 @@ export default function AnalyzePage() {
                   <Metric label="pH fit" value={scoring.ph_fit.label} />
                   <Metric label="Solubility" value={scoring.solubility.label} />
                   <Metric label="Confidence" value={scoring.confidence.toFixed(2)} />
+                  {scoring.uncertainty && <Metric label="Uncertainty" value={`${scoring.uncertainty.level} (${scoring.uncertainty.calibration_status})`} />}
                 </dl>
               ) : (
                 <p className="text-sm text-gray-600">No scoring result yet.</p>
@@ -212,13 +224,20 @@ export default function AnalyzePage() {
           <section className="mt-8 border border-gray-300 bg-white p-6">
             <h2 className="text-2xl font-serif font-semibold">Agentic report</h2>
             {prediction && (
-              <p className="mt-3 text-gray-700">
-                Baseline function scaffold: <span className="font-medium text-black">{prediction.predicted_family}</span>
-              </p>
+              <div className="mt-3 space-y-1 text-gray-700">
+                <p>Function scaffold: <span className="font-medium text-black">{prediction.predicted_family}</span></p>
+                {prediction.uncertainty && <p className="text-sm">Uncertainty: {prediction.uncertainty.level} ({prediction.uncertainty.calibration_status})</p>}
+              </div>
             )}
             <pre className="mt-5 max-h-[520px] overflow-auto whitespace-pre-wrap bg-[#081e24] p-5 text-sm leading-relaxed text-gray-100">
               {result.final_report}
             </pre>
+            <div className="mt-4 border border-gray-200 bg-[#fbfbf8] p-4 text-sm text-gray-700">
+              <p className="font-medium text-black">Reproducibility record</p>
+              <p className="mt-1">Run: {result.provenance.analysis_id}</p>
+              <p>Input fingerprint: {result.provenance.input_sha256.slice(0, 16)}…</p>
+              <p>Narrative: {result.provenance.llm_used ? `LLM (${result.provenance.llm_model})` : 'deterministic'}</p>
+            </div>
           </section>
         )}
       </div>

@@ -105,22 +105,29 @@ class ReportGenerationService:
         ]
         prediction = report.get("predicted_function")
         if prediction:
-            lines.extend(
-                [
-                    f"- Prediction: {prediction['predicted_family']}",
-                    f"- Confidence: {prediction['confidence']}",
-                    f"- Method: {prediction['method']}",
-                ]
-            )
+            lines.extend([
+                f"- Prediction: {prediction['predicted_family']}",
+                f"- Confidence: {prediction['confidence']}",
+            ])
+            if prediction.get("uncertainty"):
+                lines.extend([
+                    f"- Uncertainty: {prediction['uncertainty']['level']} ({prediction['uncertainty']['uncertainty']})",
+                    f"- Calibration: {prediction['uncertainty']['calibration_status']}",
+                ])
+            lines.append(f"- Method: {prediction['method']}")
         else:
             lines.append("- Not provided.")
 
         lines.extend(["", "## Industrial Property Indicators"])
         scoring = report.get("property_indicators")
         if scoring:
+            lines.append(f"- Industrial fit score: {scoring['industrial_fit_score']}")
+            if scoring.get("uncertainty"):
+                lines.append(
+                    f"- Confidence: {scoring['confidence']} (uncertainty: {scoring['uncertainty']['level']}, {scoring['uncertainty']['calibration_status']})"
+                )
             lines.extend(
                 [
-                    f"- Industrial fit score: {scoring['industrial_fit_score']}",
                     f"- Thermostability indicator: {scoring['thermostability']['label']} ({scoring['thermostability']['score']})",
                     f"- pH fit indicator: {scoring['ph_fit']['label']} ({scoring['ph_fit']['score']})",
                     f"- Solubility proxy: {scoring['solubility']['label']} ({scoring['solubility']['score']})",

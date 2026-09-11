@@ -3,6 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.sequence import SequenceInput
+from app.schemas.scientific import UncertaintyEstimate
 
 
 class TargetConditions(BaseModel):
@@ -50,6 +51,7 @@ class PropertyScoreResult(BaseModel):
     industrial_fit_score: float = Field(..., ge=0, le=1)
     risk_flags: List[str] = Field(default_factory=list)
     confidence: float = Field(..., ge=0, le=1)
+    uncertainty: Optional[UncertaintyEstimate] = None
     method: str
     model_version: str
     limitations: List[str] = Field(default_factory=list)

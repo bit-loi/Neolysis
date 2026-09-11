@@ -2,6 +2,7 @@ import re
 from typing import Optional
 
 from app.schemas.enzyme import EmbeddingResult, EnzymeFunctionPrediction
+from app.services.uncertainty import uncertainty_estimate
 
 
 class EnzymeFunctionService:
@@ -40,10 +41,16 @@ class EnzymeFunctionService:
         if embedding:
             evidence.append(f"Baseline composition embedding generated with {embedding.dimensions} dimensions.")
 
+        confidence = round(confidence, 3)
         return EnzymeFunctionPrediction(
             predicted_family=family,
             predicted_ec_class=ec_class,
-            confidence=round(confidence, 3),
+            confidence=confidence,
+            uncertainty=uncertainty_estimate(
+                confidence,
+                "Confidence is a heuristic derived from motif specificity and optional user context.",
+                "It has not been calibrated against a held-out experimental enzyme dataset.",
+            ),
             explanation=(
                 "This staging prediction uses transparent sequence motifs and composition features. "
                 "It should be treated as a baseline triage signal, not as a validated functional annotation."

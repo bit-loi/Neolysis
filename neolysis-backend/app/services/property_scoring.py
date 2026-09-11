@@ -1,5 +1,6 @@
 from app.schemas.property import PropertyIndicator, PropertyScoreResult, TargetConditions
 from app.services.protein_features import protein_feature_service
+from app.services.uncertainty import uncertainty_estimate
 
 
 class PropertyScoringService:
@@ -54,6 +55,7 @@ class PropertyScoringService:
         if (conditions.solvent_exposure or "none").lower() in {"moderate", "high"}:
             risk_flags.append("Solvent exposure scoring is a low-confidence staging proxy.")
 
+        confidence = 0.38
         return PropertyScoreResult(
             thermostability=PropertyIndicator(
                 score=round(thermostability_score, 3),
@@ -77,7 +79,12 @@ class PropertyScoringService:
             ),
             industrial_fit_score=round(condition_fit, 3),
             risk_flags=risk_flags,
-            confidence=0.38,
+            confidence=confidence,
+            uncertainty=uncertainty_estimate(
+                confidence,
+                "The score uses transparent sequence-composition proxies.",
+                "No assay-specific calibration or experimental measurements are included.",
+            ),
             method="baseline_sequence_property_scaffold",
             model_version="industrial-fit-baseline-v0.1",
             limitations=[

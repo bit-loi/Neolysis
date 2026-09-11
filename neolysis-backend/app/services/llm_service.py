@@ -10,7 +10,7 @@ class LLMService:
     def __init__(self):
         if settings.GOOGLE_API_KEY:
             self.client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-            self.model_name = "gemma-4-26b-a4b-it"  # Using Gemma 4 26B via Gemini API
+            self.model_name = settings.LLM_MODEL_NAME
             self.system_instruction = (
                 "You are a computational drug discovery assistant "
                 "for neglected tropical diseases in ASEAN.\n"
@@ -20,6 +20,48 @@ class LLMService:
         else:
             self.client = None
             logger.warning("GOOGLE_API_KEY not set. LLM synthesis will be unavailable.")
+
+    async def generate_enzyme_report(
+        self, structured_report: Dict[str, Any], deterministic_report: str
+    ) -> tuple[str, bool, str | None]:
+        """Narrate tool output only; deterministic output remains the safe fallback."""
+        if not self.client:
+            return deterministic_report, False, None
+
+        prompt = f"""Rewrite the structured Neolysis enzyme analysis below as a concise scientific report.
+
+Hard constraints:
+- Treat the JSON as the only source of truth.
+- Do not create, infer, recalculate, or modify any score, confidence, mutation, or measurement.
+- Clearly distinguish pretrained representations, heuristic proxies, and experimental evidence.
+- Never claim improved activity or stability without wet-lab evidence.
+- Preserve the disclaimer and important limitations.
+- If evidence is missing, say it is missing.
+
+STRUCTURED_TOOL_OUTPUT:
+{json.dumps(structured_report, sort_keys=True)}
+"""
+        enzyme_system_instruction = (
+            "You explain computational enzyme-engineering tool outputs to researchers. "
+            "You are a reporting layer, not a scientific prediction model."
+        )
+        try:
+            response = await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=enzyme_system_instruction,
+                    temperature=0.1,
+                    max_output_tokens=1600,
+                ),
+            )
+            text = (response.text or "").strip()
+            if not text:
+                return deterministic_report, False, None
+            return text, True, self.model_name
+        except Exception as exc:
+            logger.error(f"LLM enzyme report error: {exc}")
+            return deterministic_report, False, None
 
     async def generate_insight(self, ctx: Dict[str, Any]) -> str:
         if not self.client:
