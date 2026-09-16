@@ -45,6 +45,13 @@ class PropertyIndicator(BaseModel):
     method: str = "heuristic_v1"
     calibration_status: str = "uncalibrated"
     status: str = "heuristic"  # "trained" | "heuristic" | "unavailable"
+    # ── Explicit model provenance (Milestone 3A, additive) ──────────────────
+    # None for every heuristic indicator today. Only a future trained
+    # predictor (e.g. Milestone 3B's TrainedTmPredictor) would populate these
+    # with a real, versioned model artifact name.
+    model_name: Optional[str] = None
+    model_version: Optional[str] = None
+    experimental_validation_required: bool = True
 
 
 class PropertyScoreResult(BaseModel):

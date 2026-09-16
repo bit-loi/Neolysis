@@ -35,9 +35,12 @@ async def test_esm2_mode_without_service_url_falls_back_to_baseline():
     PROTEIN_EMBEDDING_MODE=esm2 with no PLM_SERVICE_URL configured must never
     attempt to load a model in-process. It must fall back to baseline and say why.
     """
-    client = ProteinEmbeddingClient(mode="esm2")
-    # Simulate PLM_SERVICE_URL being unset regardless of the developer's local .env.
-    client.mode = "esm2"
+    # Explicitly isolate the legacy provider path (provider=None) so this test
+    # exercises PROTEIN_EMBEDDING_MODE=esm2 + PLM_SERVICE_URL regardless of
+    # whatever PLM_PROVIDER happens to be set in the real local .env (e.g.
+    # Milestone 2A's PLM_PROVIDER=hf_space).
+    client = ProteinEmbeddingClient(mode="esm2", provider=None)
+    client.provider_name = None
     client._remote = None
 
     import app.config as config_module
@@ -61,7 +64,8 @@ async def test_esm2_mode_falls_back_when_remote_call_fails(monkeypatch):
     observable baseline fallback instead of raising or silently claiming to be
     a pretrained embedding.
     """
-    client = ProteinEmbeddingClient(mode="esm2")
+    client = ProteinEmbeddingClient(mode="esm2", provider=None)
+    client.provider_name = None
 
     async def fail(_self, _sequence):
         raise ConnectionError("connection refused")

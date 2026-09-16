@@ -81,6 +81,23 @@ class Settings(BaseSettings):
     PLM_POOLING: str = "mean"
     HF_TOKEN: Optional[str] = None
 
+    # -- PLM provider selection (Milestone 2A) ------------------------------
+    # Explicit provider switch: "hf_space" | "http" | "baseline" (or unset).
+    # When set, this takes priority over the legacy PROTEIN_EMBEDDING_MODE +
+    # PLM_SERVICE_URL combination (kept for backward compatibility — existing
+    # deployments that only set PROTEIN_EMBEDDING_MODE=esm2 + PLM_SERVICE_URL
+    # continue to work unchanged when PLM_PROVIDER is left unset).
+    PLM_PROVIDER: Optional[str] = None
+    # Hugging Face Space id, e.g. "JasonLOi/neolysis-plm". Only used when
+    # PLM_PROVIDER=hf_space.
+    HF_SPACE_ID: Optional[str] = None
+    # Model/max-residues used specifically by the hf_space provider. Kept
+    # separate from PROTEIN_EMBEDDING_MODEL/PROTEIN_EMBEDDING_MAX_RESIDUES
+    # (which the legacy http provider still uses) to avoid changing existing
+    # behavior for deployments already running the http microservice.
+    PLM_MODEL: str = "facebook/esm2_t30_150M_UR50D"
+    PLM_MAX_RESIDUES: int = 1022
+
     # -- NVIDIA NIM (structure prediction / MSA / ProteinMPNN) --------------
     # Not configured yet: NVIDIA_API_KEY is intentionally absent from this
     # environment. Endpoints that need it return a clear "not configured"

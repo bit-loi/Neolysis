@@ -66,6 +66,9 @@ class PropertyScoringService:
                 method=thermostability_estimate.method,
                 calibration_status=thermostability_estimate.calibration_status,
                 status=thermostability_estimate.status,
+                model_name=thermostability_estimate.model_name,
+                model_version=thermostability_estimate.model_version,
+                experimental_validation_required=thermostability_estimate.experimental_validation_required,
             ),
             ph_fit=PropertyIndicator(
                 score=ph_estimate.score,

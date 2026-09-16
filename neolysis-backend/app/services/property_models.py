@@ -22,9 +22,33 @@ deterministic sequence-composition features (via protein_feature_service),
 which is scientifically appropriate for what they estimate. Wiring these
 adapters to consume a pLM embedding is deferred to a future milestone and
 tracked as a limitation, not silently implemented without a validated benefit.
+
+Milestone 3A — Property Predictor Architecture / Heuristic Baseline
+---------------------------------------------------------------------
+Thermostability is now behind an explicit ThermostabilityPredictor Protocol.
+HeuristicThermostabilityPredictor is the only implementation that exists
+today; it is the exact same formula as before this milestone, unchanged.
+
+There is NO trained Tm model in this codebase. No dataset was downloaded, no
+training was performed, and no model artifact exists. A future
+TrainedTmPredictor (Milestone 3B) would consume a cached ESM2 embedding from
+app.services.embeddings.protein_embedding_client and a validated regression
+model, and could be swapped in behind the same Protocol without changing
+property_scoring.py or the /api/v1/properties/score response shape. The
+heuristic predictor deliberately does NOT call the embedding client or make
+any network request — there is no scientific justification for adding pLM
+inference latency to a formula that does not consume a trained embedding-
+based model.
+
+This predictor must never be described as:
+    - a predicted Tm / melting temperature prediction
+    - a trained model
+    - an AI confidence or probability
+It is only a relative, uncalibrated, explainable computational heuristic for
+candidate prioritization.
 """
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Protocol
 
 
 @dataclass
@@ -35,14 +59,46 @@ class PropertyEstimate:
     method: str
     calibration_status: str
     status: str  # "trained" | "heuristic" | "unavailable"
+    # ── Model provenance (Milestone 3A, additive) ───────────────────────────
+    # None for every heuristic predictor. Populated only by a future trained
+    # predictor (e.g. Milestone 3B's TrainedTmPredictor), so provenance is
+    # always explicit about whether a named, versioned model artifact
+    # actually produced this value.
+    model_name: Optional[str] = None
+    model_version: Optional[str] = None
+    experimental_validation_required: bool = True
 
 
-class ThermostabilityEstimator:
+class ThermostabilityPredictor(Protocol):
+    """
+    Swap point for thermostability scoring. HeuristicThermostabilityPredictor
+    is the only implementation today. A future TrainedTmPredictor (Milestone
+    3B) would implement this same interface — consuming a cached ESM2
+    embedding plus a validated regression model — so property_scoring.py and
+    the public API response shape never need to change when a real model
+    becomes available.
+    """
+
+    def predict(
+        self,
+        charged_fraction: float,
+        proline_fraction: float,
+        glycine_fraction: float,
+        temp_pressure: float,
+    ) -> PropertyEstimate:
+        ...
+
+
+class HeuristicThermostabilityPredictor:
     """
     No trained Tm predictor is installed. Design references for a future
     trained model (NOT copied, used only as scientific context): ESMStabP,
     TemStaPro, Meltome Atlas. Until a validated model artifact with reported
     MAE/RMSE/R² exists, this remains an explicit sequence-composition heuristic.
+
+    This formula is unchanged from the pre-Milestone-3A implementation —
+    Milestone 3A only introduces the ThermostabilityPredictor Protocol and
+    explicit model provenance fields around it, not a formula change.
     """
 
     METHOD = "heuristic_v1"
@@ -58,6 +114,9 @@ class ThermostabilityEstimator:
             method=self.METHOD,
             calibration_status="uncalibrated",
             status="heuristic",
+            model_name=None,
+            model_version=None,
+            experimental_validation_required=True,
         )
 
 
@@ -130,6 +189,10 @@ def _label(score: float) -> str:
     return "needs review"
 
 
-thermostability_estimator = ThermostabilityEstimator()
+# Backward-compatible name (used by property_scoring.py and existing tests
+# predating Milestone 3A). Kept as the canonical singleton instance —
+# HeuristicThermostabilityPredictor is a rename of the former
+# ThermostabilityEstimator class, not a new implementation.
+thermostability_estimator: ThermostabilityPredictor = HeuristicThermostabilityPredictor()
 ph_fit_estimator = PhFitEstimator()
 solubility_estimator = SolubilityEstimator()

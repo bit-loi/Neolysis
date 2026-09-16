@@ -45,6 +45,12 @@ tenacity
 httpx
 requests
 
+# ── Hugging Face Space client (Milestone 2A PLM provider) ─────────────────
+# Lightweight client only — does NOT pull in torch/transformers. Lazily
+# imported inside app/services/embeddings.py, not installed/loaded in this
+# development session.
+gradio_client
+
 # ── Authentication & Security ─────────────────
 passlib[bcrypt]
 PyJWT

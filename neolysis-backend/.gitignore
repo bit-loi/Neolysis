@@ -33,3 +33,8 @@ migrations/postgres/*.local.sql
 migrations/postgres/*.dump.sql
 migrations/postgres/*.bak.sql
 migrations/postgres/tmp/
+
+# dataset materialization artifacts (Milestone 3C1+) — large, reproducible from
+# dataset_manifest.json + scripts/, not meant to be committed to git
+data/raw/
+data/processed/
