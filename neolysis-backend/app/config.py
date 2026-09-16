@@ -74,9 +74,11 @@ class Settings(BaseSettings):
 
     # -- Protein Language Model (PLM) inference microservice ----------------
     # This backend never loads ESM2 in-process. When PROTEIN_EMBEDDING_MODE=esm2,
-    # embeddings are requested from the dedicated service at PLM_SERVICE_URL
-    # (see services/plm-inference). If unset/unreachable, embeddings fall back
-    # to the baseline provider with an explicit fallback_reason.
+    # embeddings are requested from a dedicated HTTP service at PLM_SERVICE_URL.
+    # The active production provider is instead the Hugging Face Space
+    # configured via PLM_PROVIDER=hf_space below. If unset/unreachable,
+    # embeddings fall back to the baseline provider with an explicit
+    # fallback_reason.
     PLM_SERVICE_URL: Optional[str] = None
     PLM_POOLING: str = "mean"
     HF_TOKEN: Optional[str] = None

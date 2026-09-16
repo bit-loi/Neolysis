@@ -26,16 +26,22 @@ numpy
 pandas
 
 # ── RAG / Vector Store ────────────────────────
-qdrant-client
-sentence-transformers
-transformers
-torch
+# NOTE: qdrant-client, sentence-transformers, torch, and transformers were
+# removed. They only backed app/services/rag_service.py (used exclusively by
+# the legacy /insight router, which is not mounted in main.py) and the legacy
+# ESM2-in-process embedding path (superseded by the Hugging Face Space
+# provider — see app/services/embeddings.py HuggingFaceSpaceEmbeddingProvider,
+# configured via PLM_PROVIDER=hf_space). None of the active, mounted routers
+# in main.py need them. Removing them avoids pulling in torch's large native
+# wheels on serverless build environments (Vercel).
 
 # ── ADMET Prediction ──────────────────────────
-# PyTDC: Therapeutics Data Commons (pretrained ADMET models)
-PyTDC
-# DeepPurpose: model loader for TDC pretrained models
-# deepchem  # Optional: heavyweight, comment out if not needed
+# NOTE: PyTDC was removed. It only backed app/services/admet_service.py (used
+# exclusively by the legacy /admet router, which is not mounted in main.py).
+# PyTDC pulls in tiledbsoma, a package that requires compiling native C++
+# code and fails to build on Vercel's serverless Python build environment.
+# If the /admet route is ever re-mounted, reinstall PyTDC in an environment
+# that can build tiledbsoma from source (or pin a prebuilt wheel).
 
 # ── LLM / AI ──────────────────────────────────
 google-genai

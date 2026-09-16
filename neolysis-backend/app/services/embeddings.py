@@ -113,9 +113,10 @@ class BaselineEmbeddingProvider:
 
 class RemotePLMProvider:
     """
-    Calls the dedicated PLM inference microservice (services/plm-inference) over
-    HTTP. This is the ONLY provider allowed to produce a pretrained protein
-    language model embedding — it never loads a model in this process.
+    Calls a self-hosted PLM inference HTTP microservice. This is a legacy
+    provider path (PLM_PROVIDER=http); the active production provider is
+    HuggingFaceSpaceEmbeddingProvider below. Like that provider, this one
+    never loads a model in this process — it only makes an HTTP call.
     """
 
     def __init__(self, base_url: str, model_id: str, max_residues: int, pooling: str, timeout: float = 30.0):
