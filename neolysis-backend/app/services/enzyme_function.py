@@ -13,33 +13,33 @@ class EnzymeFunctionService:
         enzyme_class_hint: Optional[str] = None,
     ) -> EnzymeFunctionPrediction:
         evidence: list[str] = []
-        family = "enzyme function unknown"
+        family = "general enzyme (type not yet identified)"
         ec_class = None
         confidence = 0.22
 
         if enzyme_class_hint:
             family = enzyme_class_hint.strip()
-            evidence.append("User supplied an enzyme class hint.")
+            evidence.append("You provided an expected enzyme type, which was used as a starting point.")
             confidence = 0.36
 
         if re.search(r"G[A-Z]S[A-Z]G", sequence):
-            family = "hydrolase-like enzyme; possible lipase or esterase"
+            family = "hydrolase, possibly a lipase or esterase"
             ec_class = "EC 3.-.-.-"
-            evidence.append("Detected a G-X-S-X-G motif often associated with serine hydrolase scaffolds.")
+            evidence.append("The sequence contains a pattern commonly found in fat- and ester-splitting enzymes.")
             confidence = max(confidence, 0.46)
         elif re.search(r"H[A-Z]H|H[A-Z]{2}H|H[A-Z]C", sequence):
-            family = "oxidoreductase-like or metal-binding enzyme candidate"
+            family = "oxidoreductase or metal-binding enzyme"
             ec_class = "EC 1.-.-.-"
-            evidence.append("Detected histidine-rich motif patterns that can indicate metal-binding enzyme regions.")
+            evidence.append("The sequence contains regions often linked to metal-binding enzymes.")
             confidence = max(confidence, 0.34)
         elif re.search(r"E[A-Z]{2,4}E", sequence):
-            family = "glycoside-hydrolase-like enzyme candidate"
+            family = "glycoside hydrolase, an enzyme that breaks down sugars"
             ec_class = "EC 3.2.-.-"
-            evidence.append("Detected acidic residue spacing compatible with some glycoside hydrolase catalytic motifs.")
+            evidence.append("The sequence shows an arrangement often seen in sugar-splitting enzymes.")
             confidence = max(confidence, 0.33)
 
         if embedding:
-            evidence.append(f"Baseline composition embedding generated with {embedding.dimensions} dimensions.")
+            evidence.append("A numerical fingerprint of the sequence was generated to support the comparison.")
 
         confidence = round(confidence, 3)
         return EnzymeFunctionPrediction(
@@ -52,15 +52,15 @@ class EnzymeFunctionService:
                 "It has not been calibrated against a held-out experimental enzyme dataset.",
             ),
             explanation=(
-                "This staging prediction uses transparent sequence motifs and composition features. "
-                "It should be treated as a baseline triage signal, not as a validated functional annotation."
+                "This suggestion is based on recognizable patterns in the sequence. "
+                "It is an early screening signal to help decide what to look at next, not a confirmed identification."
             ),
             evidence=evidence,
-            method="baseline_motif_and_composition_scaffold",
+            method="sequence_pattern_analysis",
             model_version="enzyme-function-baseline-v0.1",
             limitations=[
-                "No trained enzyme classifier is used in this staging scaffold.",
-                "Predicted function requires database search, structural review, and wet-lab validation.",
+                "This is a pattern-based suggestion, not a confirmed enzyme identification.",
+                "Confirming the enzyme type needs a database search, a structural review, and laboratory testing.",
             ],
         )
 

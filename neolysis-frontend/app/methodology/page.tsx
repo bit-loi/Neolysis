@@ -15,7 +15,7 @@ const sections = [
   {
     title: 'Protein feature extraction',
     icon: Microscope,
-    body: 'The backend extracts sequence length, amino acid composition, molecular weight, GRAVY, aromaticity, instability index, and isoelectric point when available. Biopython is used when present, with a transparent fallback for staging.',
+    body: 'The backend extracts sequence length, amino acid composition, molecular weight, GRAVY, aromaticity, instability index, and isoelectric point when available. Biopython is used when present, with a transparent fallback when it is not.',
   },
   {
     title: 'Industrial property scoring',
@@ -51,7 +51,7 @@ export default function MethodologyPage() {
             Transparent computational screening for enzyme engineering.
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-gray-700">
-            Neolysis staging prioritizes reliable workflow structure over exaggerated model claims. Every prediction is labeled as a baseline or computational estimate.
+            Neolysis prioritizes reliable workflow structure over exaggerated model claims. Every prediction is labeled as a baseline or computational estimate.
           </p>
         </div>
 

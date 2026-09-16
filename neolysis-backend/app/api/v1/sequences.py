@@ -1,6 +1,11 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.sequence import SequenceFeatureResponse, SequenceInput, SequenceValidationResult
+from app.schemas.sequence import (
+    SequenceFeatureMetadata,
+    SequenceFeatureResponse,
+    SequenceInput,
+    SequenceValidationResult,
+)
 from app.services.protein_features import protein_feature_service
 from app.services.sequence_validation import sequence_validation_service
 
@@ -23,5 +28,9 @@ async def extract_sequence_features(payload: SequenceInput) -> SequenceFeatureRe
                 "validation": validation.model_dump(),
             },
         )
-    features = protein_feature_service.extract(validation.cleaned_sequence)
-    return SequenceFeatureResponse(validation=validation, features=features)
+    features = protein_feature_service.extract(validation.cleaned_sequence, target_ph=payload.target_ph)
+    return SequenceFeatureResponse(
+        validation=validation,
+        features=features,
+        metadata=SequenceFeatureMetadata(method=features.method),
+    )

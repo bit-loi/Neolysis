@@ -36,9 +36,15 @@ class PropertyScoreRequest(SequenceInput):
 
 
 class PropertyIndicator(BaseModel):
-    score: float = Field(..., ge=0, le=1)
+    model_config = ConfigDict(protected_namespaces=())
+
+    score: Optional[float] = Field(None, ge=0, le=1)
     label: str
     explanation: str
+    # ── Model adapter provenance (added, additive/optional for backward compatibility) ──
+    method: str = "heuristic_v1"
+    calibration_status: str = "uncalibrated"
+    status: str = "heuristic"  # "trained" | "heuristic" | "unavailable"
 
 
 class PropertyScoreResult(BaseModel):

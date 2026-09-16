@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.schemas.quantum_variant import QuantumVariantRankRequest, QuantumVariantRankResponse
 from app.schemas.variant import MutationRiskRequest, MutationRiskResult, VariantRankRequest, VariantRankResponse
 from app.services.mutation_risk import mutation_risk_service
-from app.services.quantum_ranking_service import quantum_variant_ranking_service
 from app.services.sequence_validation import sequence_validation_service
 from app.services.variant_ranking import variant_ranking_service
 
@@ -46,9 +44,4 @@ async def analyze_mutation_risk(payload: MutationRiskRequest) -> MutationRiskRes
         active_site_positions=payload.active_site_positions,
         conserved_regions=payload.conserved_regions,
     )
-
-
-@router.post("/quantum-rank", response_model=QuantumVariantRankResponse)
-async def rank_quantum_variants(payload: QuantumVariantRankRequest) -> QuantumVariantRankResponse:
-    return quantum_variant_ranking_service.rank_quantum_variants(payload)
 

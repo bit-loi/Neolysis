@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.core.middleware import setup_middlewares
-from app.api.v1 import agents, docking, enzymes, health, projects, properties, reports, sequences, variants
+from app.api.v1 import agents, docking, enzymes, health, projects, properties, reports, sequences, structures, variants
 
 
 app = FastAPI(
@@ -32,6 +32,7 @@ app.include_router(reports.router, prefix=f"{PREFIX}/reports", tags=["Reports"])
 app.include_router(agents.router, prefix=f"{PREFIX}/agents", tags=["Agentic Analysis"])
 app.include_router(projects.router, prefix=f"{PREFIX}/projects", tags=["Structure-Aware Projects"])
 app.include_router(docking.router, prefix=f"{PREFIX}/docking", tags=["Molecular Docking"])
+app.include_router(structures.router, prefix=f"{PREFIX}/structures", tags=["NVIDIA NIM Structure Prediction"])
 
 
 @app.get("/health", include_in_schema=False)

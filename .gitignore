@@ -1,3 +1,12 @@
 .neon
 .env.local
 node_modules/
+# logs
+*.log
+*.err.log
+
+# environment files (any service, any depth) — never commit real secrets
+.env
+.env.*
+!.env.example
+!**/.env.example

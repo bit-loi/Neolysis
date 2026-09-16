@@ -1,0 +1,14 @@
+# =============================================
+# Neolysis — PLM Inference Microservice
+# =============================================
+# Separate environment from neolysis-backend on purpose: this is the only
+# process allowed to import torch/transformers for protein embeddings.
+
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+torch
+transformers
+loguru
+python-dotenv

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 
 from app.schemas.enzyme import EnzymeFunctionRequest, EnzymeFunctionResponse
-from app.services.embeddings import protein_embedding_service
+from app.services.embeddings import protein_embedding_client
 from app.services.enzyme_function import enzyme_function_service
 from app.services.sequence_validation import sequence_validation_service
 
@@ -19,7 +19,7 @@ async def predict_enzyme_function(payload: EnzymeFunctionRequest) -> EnzymeFunct
                 "validation": validation.model_dump(),
             },
         )
-    embedding = protein_embedding_service.generate_embedding(validation.cleaned_sequence)
+    embedding = await protein_embedding_client.embed(validation.cleaned_sequence)
     prediction = enzyme_function_service.predict(
         validation.cleaned_sequence,
         embedding=embedding,

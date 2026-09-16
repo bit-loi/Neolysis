@@ -6,8 +6,8 @@ import {
   AgentAnalysisResponse,
   TargetConditions,
   analyzeSequence,
-  sampleEnzymeSequence,
 } from '@/lib/enzyme-api';
+import { enzymePresets, getPresetById } from '@/lib/enzyme-presets';
 
 const defaultConditions: TargetConditions = {
   temperature_c: 60,
@@ -17,13 +17,30 @@ const defaultConditions: TargetConditions = {
   use_case: 'detergent',
 };
 
+const defaultPreset = enzymePresets[0];
+
 export default function AnalyzePage() {
-  const [sequence, setSequence] = useState(`>alkaline_protease_candidate\n${sampleEnzymeSequence}`);
+  const [sequence, setSequence] = useState(`${defaultPreset.fastaHeader}\n${defaultPreset.sequence}`);
+  const [selectedPresetId, setSelectedPresetId] = useState(defaultPreset.id);
   const [conditions, setConditions] = useState<TargetConditions>(defaultConditions);
   const [result, setResult] = useState<AgentAnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [narrativeMode, setNarrativeMode] = useState<'deterministic' | 'llm'>('deterministic');
+
+  const loadPreset = (presetId: string) => {
+    const preset = getPresetById(presetId);
+    if (!preset) return;
+    setSelectedPresetId(presetId);
+    setSequence(`${preset.fastaHeader}\n${preset.sequence}`);
+    setConditions({
+      temperature_c: preset.suggestedConditions.temperature_c,
+      ph: preset.suggestedConditions.ph,
+      salinity_m_m: preset.suggestedConditions.salinity_m_m,
+      solvent_exposure: preset.suggestedConditions.solvent_exposure,
+      use_case: preset.suggestedConditions.use_case,
+    });
+  };
 
   const updateCondition = (key: keyof TargetConditions, value: string) => {
     setConditions((current) => ({
@@ -103,14 +120,24 @@ export default function AnalyzePage() {
                     onChange={handleFile}
                   />
                 </label>
-                <button
-                  type="button"
-                  className="border border-gray-300 px-4 py-2 text-sm hover:border-[#5BA8B9]"
-                  onClick={() => setSequence(`>alkaline_protease_candidate\n${sampleEnzymeSequence}`)}
-                >
-                  Load sample
-                </button>
+                <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+                  Load example enzyme
+                  <select
+                    value={selectedPresetId}
+                    onChange={(event) => loadPreset(event.target.value)}
+                    className="border border-gray-300 bg-[#fbfbf8] px-3 py-2 text-sm text-black outline-none focus:border-[#5BA8B9]"
+                  >
+                    {enzymePresets.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
+              <p className="mt-3 text-xs text-gray-500">
+                {getPresetById(selectedPresetId)?.description} Source: UniProtKB {getPresetById(selectedPresetId)?.uniprotAccession} ({getPresetById(selectedPresetId)?.organism}).
+              </p>
             </section>
 
             <section className="border border-gray-300 bg-white p-6">
@@ -147,7 +174,7 @@ export default function AnalyzePage() {
                 <LabeledSelect
                   label="Use case"
                   value={conditions.use_case || 'custom'}
-                  options={['detergent', 'food biotech', 'textile', 'biofuel', 'academic research', 'custom']}
+                  options={['detergent', 'textile_biofuel', 'food_processing', 'pulp_paper', 'academic_research', 'custom']}
                   onChange={(value) => updateCondition('use_case', value)}
                 />
                 <LabeledSelect

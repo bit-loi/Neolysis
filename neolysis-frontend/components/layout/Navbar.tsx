@@ -11,7 +11,6 @@ const navLinks = [
   { href: '/analyze', label: 'Analyze' },
   { href: '/structure', label: 'Structure' },
   { href: '/variants', label: 'Variants' },
-  { href: '/variants/quantum', label: 'Quantum Rank' },
   { href: '/agent-report', label: 'Agent Report' },
   { href: '/methodology', label: 'Methodology' },
   { href: '/about', label: 'About' },

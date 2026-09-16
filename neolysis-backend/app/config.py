@@ -30,7 +30,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 class Settings(BaseSettings):
     # ── App ────────────────────────────────────────────────────────────────
     PROJECT_NAME: str = "Neolysis Enzyme Engineering API"
-    VERSION: str = "0.2.0-staging"
+    VERSION: str = "0.2.0"
     API_V1_STR: str = "/api/v1"
     DEBUG: bool | str = False
 
@@ -65,12 +65,31 @@ class Settings(BaseSettings):
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     PUBMED_MAX_RESULTS: int = 100  # per search term in crawler
 
-    # -- Enzyme engineering staging modes ----------------------------------
+    # -- Enzyme engineering feature modes -----------------------------------
     PROTEIN_EMBEDDING_MODE: str = "baseline"
-    PROTEIN_EMBEDDING_MODEL: str = "facebook/esm2_t6_8M_UR50D"
+    PROTEIN_EMBEDDING_MODEL: str = "facebook/esm2_t30_150M_UR50D"
     PROTEIN_EMBEDDING_MAX_RESIDUES: int = 1022
     ENZYME_FUNCTION_MODEL_MODE: str = "baseline"
     PROPERTY_SCORING_MODE: str = "baseline"
+
+    # -- Protein Language Model (PLM) inference microservice ----------------
+    # This backend never loads ESM2 in-process. When PROTEIN_EMBEDDING_MODE=esm2,
+    # embeddings are requested from the dedicated service at PLM_SERVICE_URL
+    # (see services/plm-inference). If unset/unreachable, embeddings fall back
+    # to the baseline provider with an explicit fallback_reason.
+    PLM_SERVICE_URL: Optional[str] = None
+    PLM_POOLING: str = "mean"
+    HF_TOKEN: Optional[str] = None
+
+    # -- NVIDIA NIM (structure prediction / MSA / ProteinMPNN) --------------
+    # Not configured yet: NVIDIA_API_KEY is intentionally absent from this
+    # environment. Endpoints that need it return a clear "not configured"
+    # error rather than silently doing nothing when this is unset.
+    NVIDIA_API_KEY: Optional[str] = None
+    NVIDIA_HEALTH_API_BASE_URL: Optional[str] = None
+    NVIDIA_DEFAULT_STRUCTURE_MODEL: str = "openfold3"
+    NVIDIA_REQUEST_TIMEOUT_SECONDS: int = 900
+    NVIDIA_MAX_RETRIES: int = 3
 
     # -- Molecular docking MVP ---------------------------------------------
     QUICKVINA_BIN: Optional[str] = None

@@ -27,10 +27,10 @@ import {
   generateProjectVariants,
   getProject,
   listProjects,
-  sampleEnzymeSequence,
   setProjectSequence,
   setProjectStructure,
 } from '@/lib/enzyme-api';
+import { enzymePresets, getPresetById } from '@/lib/enzyme-presets';
 
 declare global {
   interface Window {
@@ -38,26 +38,20 @@ declare global {
   }
 }
 
-const SAMPLE_PDB = `ATOM      1  N   SER A  10      11.104  13.207  14.110  1.00 20.00           N
-ATOM      2  CA  SER A  10      12.560  13.200  14.320  1.00 20.00           C
-ATOM      3  C   SER A  10      13.083  11.820  14.725  1.00 20.00           C
-ATOM      4  N   HIS A  57      15.104  10.207  12.110  1.00 20.00           N
-ATOM      5  CA  HIS A  57      15.960  10.900  11.130  1.00 20.00           C
-ATOM      6  N   ASP A 102      18.104  12.207  10.110  1.00 20.00           N
-ATOM      7  CA  ASP A 102      18.620  13.430   9.540  1.00 20.00           C
-END`;
+const defaultPreset = enzymePresets[0];
 
 export default function StructurePage() {
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
   const [project, setProject] = useState<ProjectDetailResponse | null>(null);
-  const [projectName, setProjectName] = useState('Protease structure-aware prioritization');
-  const [enzymeTarget, setEnzymeTarget] = useState('alkaline protease candidate');
-  const [organismSource, setOrganismSource] = useState('source organism TBD');
-  const [sequence, setSequence] = useState(sampleEnzymeSequence);
-  const [pdbText, setPdbText] = useState(SAMPLE_PDB);
+  const [projectName, setProjectName] = useState(`${defaultPreset.enzymeName} structure-aware prioritization`);
+  const [enzymeTarget, setEnzymeTarget] = useState(defaultPreset.enzymeName);
+  const [organismSource, setOrganismSource] = useState(defaultPreset.organism);
+  const [selectedPresetId, setSelectedPresetId] = useState(defaultPreset.id);
+  const [sequence, setSequence] = useState(defaultPreset.sequence);
+  const [pdbText, setPdbText] = useState('');
   const [pdbId, setPdbId] = useState('');
   const [chainId, setChainId] = useState('A');
-  const [activeSite, setActiveSite] = useState('S10, H57, D102');
+  const [activeSite, setActiveSite] = useState('');
   const [substrateName, setSubstrateName] = useState('model ester substrate');
   const [smiles, setSmiles] = useState('CCOC(=O)C');
   const [substrateRole, setSubstrateRole] = useState('substrate');
@@ -111,6 +105,19 @@ export default function StructurePage() {
 
   const currentProjectId = project?.project.id;
 
+  const loadStructurePreset = (presetId: string) => {
+    const preset = getPresetById(presetId);
+    if (!preset) return;
+    setSelectedPresetId(presetId);
+    setSequence(preset.sequence);
+    setEnzymeTarget(preset.enzymeName);
+    setOrganismSource(preset.organism);
+    setProjectName(`${preset.enzymeName} structure-aware prioritization`);
+    setPdbText('');
+    setPdbId('');
+    setActiveSite('');
+  };
+
   const saveSequence = () => {
     if (!currentProjectId) return;
     run('Saving sequence and extracting features...', async () => {
@@ -127,21 +134,30 @@ export default function StructurePage() {
         source_type: 'uploaded_pdb',
         chain_id: chainId,
         raw_pdb_text: pdbText,
-        structure_notes: 'MVP uploaded/pasted PDB text for visualization and active-site context.',
+        structure_notes: 'Pasted PDB text for visualization and active-site context.',
       });
       await refreshProject(currentProjectId);
       setStatus('Structure saved.');
     });
   };
 
-  const fetchPdb = () => {
+  const fetchById = (source: 'pdb_id' | 'alphafold_db') => {
+    if (!currentProjectId) {
+      setError('Create or select a project before fetching a structure.');
+      return;
+    }
     const normalized = pdbId.trim().toUpperCase();
     if (!normalized) return;
-    run('Fetching PDB text...', async () => {
-      const response = await fetch(`https://files.rcsb.org/download/${normalized}.pdb`);
-      if (!response.ok) throw new Error(`PDB ${normalized} could not be fetched.`);
-      setPdbText(await response.text());
-      setStatus(`Fetched PDB ${normalized}. Review chain and save the structure.`);
+    const label = source === 'pdb_id' ? 'RCSB PDB' : 'AlphaFold DB';
+    run(`Fetching structure ${normalized} from ${label}...`, async () => {
+      const saved = await setProjectStructure(currentProjectId, {
+        source_type: source,
+        chain_id: chainId,
+        ...(source === 'pdb_id' ? { pdb_id: normalized } : { alphafold_id: normalized }),
+      });
+      if (saved.raw_pdb_text) setPdbText(saved.raw_pdb_text);
+      await refreshProject(currentProjectId);
+      setStatus(`Fetched and saved ${normalized} from ${label}.`);
     });
   };
 
@@ -266,6 +282,20 @@ export default function StructurePage() {
           <main className="space-y-6">
             <div className="grid gap-6 xl:grid-cols-2">
               <Panel title="Protein sequence" icon={<FileText className="h-5 w-5" />}>
+                <label className="mb-3 block text-sm text-gray-600">
+                  Load example enzyme
+                  <select
+                    value={selectedPresetId}
+                    onChange={(event) => loadStructurePreset(event.target.value)}
+                    className="mt-1 w-full border border-gray-300 bg-[#fbfbf8] px-3 py-2 text-sm text-black outline-none focus:border-[#5BA8B9]"
+                  >
+                    {enzymePresets.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <textarea
                   value={sequence}
                   onChange={(event) => setSequence(event.target.value)}
@@ -275,6 +305,9 @@ export default function StructurePage() {
                 <ActionButton onClick={saveSequence} disabled={!currentProjectId} icon={<Activity className="h-4 w-4" />}>
                   Validate sequence
                 </ActionButton>
+                <p className="mt-2 text-xs text-gray-500">
+                  After saving, fetch a matching structure below (search RCSB or UniProt for a {enzymeTarget} entry) before defining active-site residues, so residue numbers refer to a real structure.
+                </p>
                 {project?.sequence?.feature_json && (
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <Metric label="Length" value={`${project.sequence.sequence_length} aa`} />
@@ -288,25 +321,40 @@ export default function StructurePage() {
               </Panel>
 
               <Panel title="Structure input" icon={<Box className="h-5 w-5" />}>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto_90px] items-end gap-3">
-                  <Input label="PDB ID" value={pdbId} onChange={setPdbId} mono />
-                  <button
-                    type="button"
-                    onClick={fetchPdb}
-                    className="border border-gray-900 px-4 py-2 text-sm font-medium transition hover:border-[#5BA8B9] hover:text-[#5BA8B9]"
-                  >
-                    Fetch
-                  </button>
+                <div className="grid grid-cols-[minmax(0,1fr)_90px] items-end gap-3">
+                  <Input label="PDB ID or UniProt accession" value={pdbId} onChange={setPdbId} mono />
                   <Input label="Chain" value={chainId} onChange={setChainId} />
                 </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Use a 4-character PDB entry (e.g. 1LVE) to fetch an experimental structure from RCSB, or a UniProt accession (e.g. P00780) to fetch a predicted structure from AlphaFold DB.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fetchById('pdb_id')}
+                    disabled={!currentProjectId || !pdbId.trim()}
+                    className="border border-gray-900 px-4 py-2 text-sm font-medium transition hover:border-[#5BA8B9] hover:text-[#5BA8B9] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Fetch from RCSB PDB
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fetchById('alphafold_db')}
+                    disabled={!currentProjectId || !pdbId.trim()}
+                    className="border border-gray-900 px-4 py-2 text-sm font-medium transition hover:border-[#5BA8B9] hover:text-[#5BA8B9] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Fetch from AlphaFold DB
+                  </button>
+                </div>
+                <p className="mt-4 text-sm font-medium text-gray-700">Or paste PDB text directly</p>
                 <textarea
                   value={pdbText}
                   onChange={(event) => setPdbText(event.target.value)}
-                  className="mt-3 min-h-[220px] w-full resize-y border border-gray-300 bg-[#fbfbf8] p-4 font-mono text-xs outline-none focus:border-[#5BA8B9]"
+                  className="mt-2 min-h-[220px] w-full resize-y border border-gray-300 bg-[#fbfbf8] p-4 font-mono text-xs outline-none focus:border-[#5BA8B9]"
                   spellCheck={false}
                 />
                 <ActionButton onClick={saveStructure} disabled={!currentProjectId} icon={<Save className="h-4 w-4" />}>
-                  Save PDB
+                  Save pasted PDB text
                 </ActionButton>
               </Panel>
             </div>
@@ -317,11 +365,21 @@ export default function StructurePage() {
               </Panel>
 
               <Panel title="Active site" icon={<Activity className="h-5 w-5" />}>
-                <Input label="Residues" value={activeSite} onChange={setActiveSite} mono />
+                <Input label="Residues (e.g. S221, D64, H128)" value={activeSite} onChange={setActiveSite} mono />
+                <p className="mt-1 text-xs text-gray-500">
+                  Use the residue numbering from the saved structure file above, not the plain sequence position. Fetch a structure first so these numbers can be checked.
+                </p>
                 <ActionButton onClick={saveActiveSite} disabled={!currentProjectId || !activeStructure} icon={<Save className="h-4 w-4" />}>
                   Save active site
                 </ActionButton>
                 <RecordList items={project?.active_sites.map((item) => `${item.name}: ${item.residue_list.join(', ')}`) ?? []} />
+                {project?.active_sites.some((item) => item.warnings.length > 0) && (
+                  <div className="mt-3 space-y-1 border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">
+                    {project.active_sites.flatMap((item) => item.warnings).map((warning, index) => (
+                      <p key={index}>{warning}</p>
+                    ))}
+                  </div>
+                )}
                 {project?.active_sites[0] && (
                   <div className="mt-4 space-y-3 text-sm">
                     <ResidueGroup label="Nearby 4-8 A context" items={project.active_sites[0].nearby_residues} />

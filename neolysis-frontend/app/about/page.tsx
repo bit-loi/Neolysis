@@ -63,7 +63,7 @@ export default function AboutPage() {
         <section className="mt-10 border border-gray-300 bg-white p-8">
           <h2 className="font-serif text-3xl font-semibold">Scientific positioning</h2>
           <p className="mt-4 max-w-4xl leading-relaxed text-gray-700">
-            The staging platform uses deterministic tools and baseline computational scaffolds to organize sequence-level evidence. The agentic layer coordinates those tools and explains outputs; it does not invent scientific results.
+            The platform uses deterministic tools and baseline computational methods to organize sequence-level evidence. The agentic layer coordinates those tools and explains outputs; it does not invent scientific results.
           </p>
           <Link href="/analyze" className="btn-bordered btn-bordered-dark mt-8">
             <ArrowRight className="h-4 w-4" />

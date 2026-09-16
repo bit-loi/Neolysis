@@ -16,29 +16,29 @@ class ReportGenerationService:
         conditions = request.target_conditions
 
         summary_parts = [
-            f"Sequence validation returned {'valid' if validation.valid else 'invalid'} status for a {validation.sequence_length}-residue input."
+            f"The submitted sequence is {'valid' if validation.valid else 'not valid'} and contains {validation.sequence_length} amino acids."
         ]
         if prediction:
             summary_parts.append(
-                f"Baseline function scaffold suggests {prediction.predicted_family} with confidence {prediction.confidence:.2f}."
+                f"Its likely enzyme type is {prediction.predicted_family}, with {self._confidence_words(prediction.confidence)} confidence."
             )
         if scoring:
             summary_parts.append(
-                f"Industrial fit proxy score is {scoring.industrial_fit_score:.2f} ({scoring.condition_fit.label})."
+                f"Overall fit for the target industrial conditions is {self._score_words(scoring.industrial_fit_score)}."
             )
         if variants and variants.ranked_variants:
             top = variants.ranked_variants[0]
             summary_parts.append(
-                f"Top ranked variant is {top.variant_id} with wet-lab priority {top.wet_lab_priority}."
+                f"The top candidate to test first is variant {top.variant_id} ({top.wet_lab_priority} priority)."
             )
 
         executive_summary = " ".join(summary_parts) + " " + WET_LAB_DISCLAIMER
 
         validation_plan = self._validation_plan(conditions, variants is not None)
         limitations = [
-            "This staging report is generated only from structured computational outputs.",
-            "No wet-lab activity, kinetics, expression, or process-stability data is included.",
-            "All candidate and variant decisions require experimental validation.",
+            "This report is based only on computer analysis of the sequence.",
+            "It does not include any laboratory measurements of activity, stability, or production yield.",
+            "Every candidate should be confirmed with laboratory testing before use.",
         ]
 
         json_report = {
@@ -75,86 +75,103 @@ class ReportGenerationService:
                 rationale=f"The selected use case is {use_case}; activity must be measured under matching pH, temperature, salinity, and solvent conditions.",
             ),
             ValidationPlanItem(
-                step="Measure thermal and pH stability over process-relevant time windows",
-                rationale="Industrial deployment depends on retained activity and shelf/process stability, not only sequence-level proxies.",
+                step="Measure heat and pH stability over realistic process times",
+                rationale="Real-world use depends on the enzyme keeping its activity over time, which sequence analysis alone cannot confirm.",
             ),
         ]
         if has_variants:
             items.append(
                 ValidationPlanItem(
-                    step="Screen top variants side-by-side with the wild type",
-                    rationale="Variant ranking is a prioritization scaffold and should be validated with matched assays.",
+                    step="Test the top variants side by side with the original enzyme",
+                    rationale="The ranking suggests where to start; matched lab tests confirm which variant actually performs better.",
                 )
             )
         return items
 
     @staticmethod
-    def _markdown(report: dict) -> str:
+    def _confidence_words(value: float) -> str:
+        if value >= 0.66:
+            return "high"
+        if value >= 0.4:
+            return "moderate"
+        return "low"
+
+    @staticmethod
+    def _score_words(value: float) -> str:
+        if value >= 0.72:
+            return "strong"
+        if value >= 0.45:
+            return "moderate"
+        return "limited"
+
+    def _markdown(self, report: dict) -> str:
         lines = [
-            "# Neolysis Enzyme Candidate Report",
+            "Neolysis Enzyme Candidate Report",
             "",
-            "## Executive Summary",
+            "Summary",
             report["executive_summary"],
             "",
-            "## Sequence Quality",
-            f"- Valid: {report['input_sequence_summary']['valid']}",
-            f"- Length: {report['input_sequence_summary']['sequence_length']} residues",
-            f"- Warnings: {', '.join(report['input_sequence_summary']['warnings']) or 'None'}",
-            "",
-            "## Predicted Function / Enzyme Class",
+            "Sequence Quality",
+            f"The sequence is {'valid' if report['input_sequence_summary']['valid'] else 'not valid'}.",
+            f"It contains {report['input_sequence_summary']['sequence_length']} amino acids.",
         ]
+        warnings = report["input_sequence_summary"]["warnings"]
+        if warnings:
+            lines.append(f"Notes: {', '.join(warnings)}.")
+        else:
+            lines.append("No quality warnings were found.")
+
+        lines.extend(["", "Likely Enzyme Type"])
         prediction = report.get("predicted_function")
         if prediction:
-            lines.extend([
-                f"- Prediction: {prediction['predicted_family']}",
-                f"- Confidence: {prediction['confidence']}",
-            ])
-            if prediction.get("uncertainty"):
-                lines.extend([
-                    f"- Uncertainty: {prediction['uncertainty']['level']} ({prediction['uncertainty']['uncertainty']})",
-                    f"- Calibration: {prediction['uncertainty']['calibration_status']}",
-                ])
-            lines.append(f"- Method: {prediction['method']}")
-        else:
-            lines.append("- Not provided.")
-
-        lines.extend(["", "## Industrial Property Indicators"])
-        scoring = report.get("property_indicators")
-        if scoring:
-            lines.append(f"- Industrial fit score: {scoring['industrial_fit_score']}")
-            if scoring.get("uncertainty"):
-                lines.append(
-                    f"- Confidence: {scoring['confidence']} (uncertainty: {scoring['uncertainty']['level']}, {scoring['uncertainty']['calibration_status']})"
-                )
-            lines.extend(
-                [
-                    f"- Thermostability indicator: {scoring['thermostability']['label']} ({scoring['thermostability']['score']})",
-                    f"- pH fit indicator: {scoring['ph_fit']['label']} ({scoring['ph_fit']['score']})",
-                    f"- Solubility proxy: {scoring['solubility']['label']} ({scoring['solubility']['score']})",
-                    f"- Risk flags: {', '.join(scoring['risk_flags']) or 'None'}",
-                ]
+            lines.append(
+                f"Closest match: {prediction['predicted_family']}."
+            )
+            lines.append(
+                f"Confidence in this match is {self._confidence_words(prediction['confidence'])}."
+            )
+            lines.append(
+                "This is an early screening signal based on sequence patterns, not a confirmed identification."
             )
         else:
-            lines.append("- Not provided.")
+            lines.append("Not enough information to suggest an enzyme type.")
 
-        lines.extend(["", "## Candidate / Variant Ranking"])
+        lines.extend(["", "Fit for Target Industrial Conditions"])
+        scoring = report.get("property_indicators")
+        if scoring:
+            lines.append(
+                f"Overall condition fit: {scoring['condition_fit']['label']}."
+            )
+            lines.append(f"Heat stability: {scoring['thermostability']['label']}.")
+            lines.append(f"pH suitability: {scoring['ph_fit']['label']}.")
+            lines.append(f"Solubility outlook: {scoring['solubility']['label']}.")
+            if scoring["risk_flags"]:
+                lines.append("Things to double-check:")
+                for flag in scoring["risk_flags"]:
+                    lines.append(f"  - {flag}")
+        else:
+            lines.append("Not enough information to estimate industrial fit.")
+
+        lines.extend(["", "Candidate Variants to Test"])
         variants = report.get("candidate_variant_ranking")
         if variants and variants["ranked_variants"]:
             for item in variants["ranked_variants"]:
                 lines.append(
-                    f"- #{item['rank']} {item['variant_id']}: fit {item['predicted_fit_score']}, risk {item['risk_score']}, priority {item['wet_lab_priority']}"
+                    f"  {item['rank']}. Variant {item['variant_id']} - "
+                    f"{item['wet_lab_priority']} priority "
+                    f"(estimated fit {item['predicted_fit_score']}, risk {item['risk_score']})."
                 )
         else:
-            lines.append("- No variants were provided.")
+            lines.append("No variants were provided for comparison.")
 
-        lines.extend(["", "## Wet-lab Validation Plan"])
+        lines.extend(["", "Suggested Next Steps in the Lab"])
         for item in report["wet_lab_validation_plan"]:
-            lines.append(f"- {item['step']}: {item['rationale']}")
+            lines.append(f"  - {item['step']}. {item['rationale']}")
 
-        lines.extend(["", "## Limitations"])
+        lines.extend(["", "What This Report Does and Does Not Cover"])
         for limitation in report["limitations"]:
-            lines.append(f"- {limitation}")
-        lines.extend(["", f"**Disclaimer:** {report['disclaimer']}"])
+            lines.append(f"  - {limitation}")
+        lines.extend(["", report["disclaimer"]])
         return "\n".join(lines)
 
 

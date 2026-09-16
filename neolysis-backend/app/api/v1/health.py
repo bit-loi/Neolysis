@@ -26,6 +26,6 @@ async def full_health_check() -> dict:
             "agent_orchestrator": {"status": "available"},
         },
         "limitations": [
-            "Staging health checks do not require database, Redis, or model-server connectivity.",
+            "This health check does not require database, Redis, or model-server connectivity.",
         ],
     }

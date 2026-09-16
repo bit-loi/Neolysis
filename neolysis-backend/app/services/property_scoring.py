@@ -1,4 +1,5 @@
 from app.schemas.property import PropertyIndicator, PropertyScoreResult, TargetConditions
+from app.services.property_models import ph_fit_estimator, solubility_estimator, thermostability_estimator
 from app.services.protein_features import protein_feature_service
 from app.services.uncertainty import uncertainty_estimate
 
@@ -17,22 +18,23 @@ class PropertyScoringService:
 
         target_temp = conditions.temperature_c if conditions.temperature_c is not None else 37.0
         temp_pressure = min(max((target_temp - 35.0) / 55.0, 0.0), 1.0)
-        thermostability_score = 0.42 + charged_fraction * 1.2 + proline_fraction * 0.9 - glycine_fraction * 0.45
-        thermostability_score -= temp_pressure * 0.18
-        thermostability_score = self._clamp(thermostability_score)
+        thermostability_estimate = thermostability_estimator.predict(
+            charged_fraction, proline_fraction, glycine_fraction, temp_pressure
+        )
 
         target_ph = conditions.ph if conditions.ph is not None else 7.0
         pi = features.isoelectric_point
         if pi is not None:
-            ph_distance = abs(target_ph - pi)
-            ph_score = self._clamp(1.0 - ph_distance / 7.0)
-            ph_explanation = "pH fit uses the estimated isoelectric point as a rough process compatibility proxy."
+            ph_estimate = ph_fit_estimator.predict_from_isoelectric_point(target_ph, pi)
         else:
             acid_basic_balance = abs((composition["D"] + composition["E"]) - (composition["K"] + composition["R"])) / length
-            ph_score = self._clamp(0.62 - acid_basic_balance)
-            ph_explanation = "pH fit uses charged residue balance because isoelectric point was unavailable."
+            ph_estimate = ph_fit_estimator.predict_from_charge_balance(acid_basic_balance)
 
-        solubility_score = self._clamp(0.72 - max(hydrophobicity, 0) * 0.12 + charged_fraction * 0.8 - cysteine_fraction * 0.3)
+        solubility_estimate = solubility_estimator.predict(hydrophobicity, charged_fraction, cysteine_fraction)
+
+        thermostability_score = thermostability_estimate.score
+        ph_score = ph_estimate.score
+        solubility_score = solubility_estimate.score
 
         solvent_penalty = {
             "none": 0.0,
@@ -53,29 +55,41 @@ class PropertyScoringService:
         if cysteine_fraction > 0.04:
             risk_flags.append("Elevated cysteine content may require checking disulfide state and expression conditions.")
         if (conditions.solvent_exposure or "none").lower() in {"moderate", "high"}:
-            risk_flags.append("Solvent exposure scoring is a low-confidence staging proxy.")
+            risk_flags.append("Solvent exposure scoring is a low-confidence baseline indicator.")
 
         confidence = 0.38
         return PropertyScoreResult(
             thermostability=PropertyIndicator(
-                score=round(thermostability_score, 3),
-                label=self._label(thermostability_score),
-                explanation="Estimated from charged residue, proline, glycine, and target-temperature proxies.",
+                score=thermostability_estimate.score,
+                label=thermostability_estimate.label,
+                explanation=thermostability_estimate.explanation,
+                method=thermostability_estimate.method,
+                calibration_status=thermostability_estimate.calibration_status,
+                status=thermostability_estimate.status,
             ),
             ph_fit=PropertyIndicator(
-                score=round(ph_score, 3),
-                label=self._label(ph_score),
-                explanation=ph_explanation,
+                score=ph_estimate.score,
+                label=ph_estimate.label,
+                explanation=ph_estimate.explanation,
+                method=ph_estimate.method,
+                calibration_status=ph_estimate.calibration_status,
+                status=ph_estimate.status,
             ),
             solubility=PropertyIndicator(
-                score=round(solubility_score, 3),
-                label=self._label(solubility_score),
-                explanation="Estimated from hydrophobicity, charged residue fraction, and cysteine content.",
+                score=solubility_estimate.score,
+                label=solubility_estimate.label,
+                explanation=solubility_estimate.explanation,
+                method=solubility_estimate.method,
+                calibration_status=solubility_estimate.calibration_status,
+                status=solubility_estimate.status,
             ),
             condition_fit=PropertyIndicator(
                 score=round(condition_fit, 3),
                 label=self._label(condition_fit),
                 explanation="Combined industrial condition fit with penalties for solvent exposure and high salinity.",
+                method="heuristic_v1",
+                calibration_status="uncalibrated",
+                status="heuristic",
             ),
             industrial_fit_score=round(condition_fit, 3),
             risk_flags=risk_flags,
@@ -90,6 +104,7 @@ class PropertyScoringService:
             limitations=[
                 "Scores are computational proxies for prioritization only.",
                 "No activity assay, kinetic model, or process-stability measurement is included.",
+                "No trained thermostability or solubility model is installed yet; these remain transparent heuristics.",
                 "Experimental wet-lab validation is required before industrial use.",
             ],
         )

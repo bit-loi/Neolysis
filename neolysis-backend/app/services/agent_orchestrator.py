@@ -8,7 +8,7 @@ from app.schemas.report import ReportGenerationRequest
 from app.schemas.sequence import SequenceFeatureResponse
 from app.schemas.variant import VariantRankRequest
 from app.schemas.scientific import AnalysisProvenance, ComponentProvenance
-from app.services.embeddings import protein_embedding_service
+from app.services.embeddings import protein_embedding_client
 from app.services.enzyme_function import enzyme_function_service
 from app.services.protein_features import protein_feature_service
 from app.services.property_scoring import property_scoring_service
@@ -69,7 +69,7 @@ class NeolysisAgentOrchestrator:
             )
         )
 
-        embedding = protein_embedding_service.generate_embedding(sequence)
+        embedding = await protein_embedding_client.embed(sequence)
         tool_calls.append(
             AgentToolCall(
                 name="generate_protein_embedding",

@@ -15,7 +15,7 @@ const workflow = [
   },
   {
     title: 'Score process fit',
-    description: 'Estimate thermostability, pH fit, solubility, and condition fit with transparent staging proxies.',
+    description: 'Estimate thermostability, pH fit, solubility, and condition fit with transparent baseline indicators.',
     href: '/methodology',
     cta: 'Review Method',
   },

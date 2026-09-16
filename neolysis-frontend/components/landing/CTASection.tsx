@@ -34,7 +34,7 @@ export function CTASection() {
             transition={{ duration: 0.6 }}
           >
             <h2 className="font-serif text-4xl leading-tight text-gray-900 sm:text-5xl">
-              Staging roadmap
+              Product roadmap
             </h2>
             <div className="mt-8 space-y-4 text-gray-700">
               <p>Current: FASTA validation, feature extraction, baseline scoring, variant ranking, and agentic report generation.</p>

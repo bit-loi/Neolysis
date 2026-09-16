@@ -47,7 +47,7 @@ async def set_project_sequence(project_id: str, payload: EnzymeSequenceRequest) 
 
 @router.post("/{project_id}/structure", response_model=EnzymeStructureRecord)
 async def set_project_structure(project_id: str, payload: EnzymeStructureRequest) -> EnzymeStructureRecord:
-    return project_workflow_service.set_structure(project_id, payload)
+    return await project_workflow_service.set_structure(project_id, payload)
 
 
 @router.get("/{project_id}/structure", response_model=list[EnzymeStructureRecord])

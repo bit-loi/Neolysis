@@ -39,6 +39,33 @@ class MutationRiskResult(BaseModel):
     limitations: List[str] = Field(default_factory=list)
 
 
+class VariantSignals(BaseModel):
+    """
+    Explainable components behind a variant's rank, instead of one opaque
+    "AI score". Any signal this layer cannot compute is left as None with an
+    explicit status — never fabricated.
+
+    IMPORTANT: proteinmpnn_compatibility is a backbone-conditioned sequence
+    design/compatibility signal (see app/schemas/structure.py), NOT a
+    predicted \u0394\u0394G value. This field must never be interpreted as stability.
+    """
+
+    thermostability_delta: Optional[float] = Field(
+        None, description="Variant thermostability score minus wild-type thermostability score."
+    )
+    solubility_delta: Optional[float] = None
+    ph_fit_delta: Optional[float] = None
+    proteinmpnn_compatibility: Optional[float] = Field(
+        None,
+        description="Backbone-conditioned sequence design/compatibility signal from ProteinMPNN. Not a \u0394\u0394G value.",
+    )
+    proteinmpnn_status: str = "not_available"  # "not_available" | "completed"
+    active_site_distance_angstrom: Optional[float] = Field(
+        None, description="3D distance to the nearest active-site residue, when structure context is available."
+    )
+    structure_prediction_confidence: Optional[float] = None
+
+
 class RankedVariant(BaseModel):
     rank: int
     variant_id: str
@@ -50,6 +77,10 @@ class RankedVariant(BaseModel):
     wet_lab_priority: str
     explanation: str
     risk_flags: List[str] = Field(default_factory=list)
+    # ── Explainable ranking signals (added, additive/optional) ──────────────
+    signals: Optional[VariantSignals] = None
+    reasoning: List[str] = Field(default_factory=list)
+    calibration_status: str = "uncalibrated"
 
 
 class VariantRankResponse(BaseModel):
